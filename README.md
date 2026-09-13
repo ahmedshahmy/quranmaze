@@ -27,8 +27,14 @@ them to the sheikh for checking.
    **Wrong order → −1 mark**, you redo the same word, and the sheikh
    **scatters the letters to new positions**.
 
-Helpers: click any letter in the "Collected" tray (or **⌫ أعد حرفًا**) to put it
-back in the maze and re-arrange your order without a penalty.
+**Score:** correct order **+1**, wrong order **−1**. The score is always visible
+(a HUD over the maze plus a scoreboard in the panel with **Score, Correct, Wrong
+and Best**); a `+1` / `−1` floats up over the maze on each check, and your best
+result is remembered on the device.
+
+Helpers: click any letter in the "Collected" tray to put it back in the maze and
+re-arrange your order without a penalty, and press **Backspace** or the **↺ reset**
+button to jump back to the start tile.
 
 ## Sound: real Qur'an recitation (bundled)
 
@@ -192,9 +198,10 @@ fills ~87% of the screen height on a desktop and ~98% in fullscreen. Use
 * Move: arrow keys / WASD, **swipe on the maze**, or the on-screen ▲▼◀▶ pad
 * Check at the sheikh: **Space / E** when standing next to him (or tap him)
 * Replay the word: **R** or **🔊 Listen**
-* Put a letter back: click it in the tray, or **⌫ أعد حرفًا**
-* **Backspace** (or the **↺ البداية** button) jumps the pac-man back to the start
-  of the maze — collected letters are kept, it is a shortcut, not a penalty
+* Put a letter back: click it in the tray
+* **Backspace** (or the **↺ من البداية** button, also on the phone control row)
+  jumps the pac-man back to the start of the maze — collected letters are kept,
+  it is a shortcut, not a penalty
 
 ### On a phone
 

@@ -92,6 +92,39 @@
   #banner.bad #bannerAr { color: var(--bad); }
   #bannerEn { font-size: 10.5px; opacity: .85; margin-top: 2px; }
 
+  #scoreHud {
+    position: absolute; left: 8px; top: 8px; z-index: 6; pointer-events: none;
+    display: flex; flex-direction: column; gap: 1px;
+    background: rgba(10, 16, 40, .82); border: 1px solid #3b4a8c; border-radius: 12px;
+    padding: 5px 10px; line-height: 1.25;
+  }
+  .hudScore { font-size: 18px; font-weight: 800; color: var(--accent); }
+  .hudScore b { font-size: 20px; }
+  .hudDetail { font-size: 11px; opacity: .85; display: flex; gap: 8px; }
+  #scoreFloats {
+    position: absolute; left: 50%; top: 26%; transform: translateX(-50%);
+    z-index: 7; pointer-events: none;
+  }
+  .scoreFloat {
+    position: absolute; left: 50%; transform: translateX(-50%);
+    font-size: 30px; font-weight: 800; white-space: nowrap;
+    animation: scoreRise 1.1s ease-out forwards;
+  }
+  .scoreFloat.up { color: var(--ok); text-shadow: 0 2px 10px rgba(52,211,153,.5); }
+  .scoreFloat.down { color: var(--bad); text-shadow: 0 2px 10px rgba(251,113,133,.5); }
+  @keyframes scoreRise {
+    0%   { opacity: 0; transform: translate(-50%, 10px) scale(.8); }
+    25%  { opacity: 1; transform: translate(-50%, 0) scale(1.05); }
+    100% { opacity: 0; transform: translate(-50%, -46px) scale(1); }
+  }
+  @media (pointer: coarse) {
+    #scoreHud { padding: 4px 8px; border-radius: 10px; }
+    .hudScore { font-size: 15px; }
+    .hudScore b { font-size: 17px; }
+    .hudDetail { font-size: 10px; gap: 6px; }
+    .scoreFloat { font-size: 26px; }
+  }
+
   #wordCard {
     position: absolute; left: 50%; top: 42%; transform: translate(-50%, -50%) scale(.9);
     width: min(84%, 420px); z-index: 7; pointer-events: none;
@@ -167,6 +200,15 @@
   .audioStatus.clip, .audioStatus.online { border-color: #2f7d5b; }
   .audioStatus.voice { border-color: #3b5ea8; }
   .audioStatus.none, .audioStatus.blocked { border-color: #a8443f; }
+
+  .scoreBox { background: rgba(7, 11, 28, .6); border-radius: 12px; padding: 7px 9px; }
+  .scoreRow {
+    display: flex; justify-content: space-between; align-items: baseline;
+    font-size: 12.5px; padding: 3px 0;
+  }
+  .scoreRow b { font-size: 16px; color: var(--accent); }
+  .scoreRow:nth-of-type(3) b { color: var(--ok); }
+  .scoreRow:nth-of-type(4) b { color: var(--bad); }
 
   .trayArea { background: rgba(7, 11, 28, .6); border-radius: 12px; padding: 7px; }
   #tray { display: flex; flex-wrap: wrap; gap: 6px; min-height: 46px; }
@@ -330,14 +372,19 @@
     <div class="actRow">
       <button class="btn big js-listen">🔊 <span lang="ar" dir="rtl">استمع</span></button>
       <button class="btn ghost js-check">🤲 <span lang="ar" dir="rtl">تحقق</span></button>
-      <button class="btn ghost js-drop">⌫</button>
-      <button class="btn ghost js-reset">↺</button>
+      <button class="btn ghost js-reset">↺ <span lang="ar" dir="rtl">من البداية</span></button>
     </div>
 
     <div id="stageWrap">
       <canvas id="cv"></canvas>
       <div id="banner"><div id="bannerAr"></div><div id="bannerEn"></div></div>
       <div id="msgbar"><div id="msgAr"></div><div id="msgEn"></div></div>
+      <div id="scoreHud">
+        <span class="hudScore">⭐ <b id="hudScore">0</b></span>
+        <span class="hudDetail"><span id="hudCorrect">✅ 0</span> <span id="hudWrong">❌ 0</span></span>
+      </div>
+      <div id="scoreFloats"></div>
+
       <!-- shown when a word is spelled correctly: the word and what it means -->
       <div id="wordCard">
         <div class="wcTop">✓ <span lang="ar" dir="rtl">أحسنت</span></div>
@@ -362,8 +409,7 @@
     <div class="audioStatus idle" id="audioStatus"></div>
     <div class="btnRow">
       <button class="btn ghost js-check" id="btnCheck">🤲 <span lang="ar" dir="rtl">تحقق</span></button>
-      <button class="btn ghost js-drop" id="btnDrop">⌫ <span lang="ar" dir="rtl">أعد حرفًا</span></button>
-      <button class="btn ghost js-reset" id="btnReset">↺ <span lang="ar" dir="rtl">البداية</span></button>
+      <button class="btn ghost js-reset" id="btnReset">↺ <span lang="ar" dir="rtl">من البداية</span></button>
       <button class="btn ghost" id="btnSound">🔊</button>
     </div>
 
@@ -371,6 +417,14 @@
       <h3>Collected · الحروف المجموعة (بالترتيب)</h3>
       <div id="tray"></div>
       <div id="trayCount">0 / 3 letters collected</div>
+    </div>
+
+    <div class="scoreBox">
+      <h3>Score · النتيجة</h3>
+      <div class="scoreRow"><span>⭐ <span lang="ar" dir="rtl">النقاط</span> Score</span><b id="statScore">0</b></div>
+      <div class="scoreRow"><span>✅ <span lang="ar" dir="rtl">صحيحة</span> Correct</span><b id="statCorrect">0</b></div>
+      <div class="scoreRow"><span>❌ <span lang="ar" dir="rtl">خاطئة</span> Wrong</span><b id="statWrong">0</b></div>
+      <div class="scoreRow"><span>🏆 <span lang="ar" dir="rtl">أفضل</span> Best</span><b id="statBest">0</b></div>
     </div>
 
     <div>
@@ -385,8 +439,8 @@
     </div>
     <div class="keys">
       <kbd>←↑↓→</kbd>/<kbd>WASD</kbd> or swipe/d-pad · <kbd>Space</kbd> check ·
-      <kbd>R</kbd> replay word · <kbd>Backspace</kbd> or ↺ back to the start ·
-      tap a tray letter to put it back.
+      <kbd>R</kbd> replay word · <kbd>Backspace</kbd> or the ↺ <b>reset</b> button
+      returns you to the start · tap a collected letter to put it back.
     </div>
   </aside>
 </main>
@@ -416,8 +470,10 @@
       <li class="ar" lang="ar" dir="rtl">4️⃣ بعد جمع كل الحروف، اذهب إلى الشيخ 🤲 ليُصحّح ترتيبك.</li>
       <li>4️⃣ With all letters collected, go to the <b>sheikh 🤲</b>: correct = <b>+1</b> and the
         next word · wrong = <b>−1</b> and he scatters the letters again.</li>
-      <li>↺ <b>Lost in the maze?</b> Press <b>Backspace</b> (or the ↺ button) to jump back to the
-        start — your collected letters are kept.</li>
+      <li>↺ <b>Lost in the maze?</b> Press <b>Backspace</b> or the <b>↺ reset</b> button
+        (under the maze on phones) to jump back to the start — your collected letters are kept.</li>
+      <li>⭐ <b>Score:</b> correct order = <b>+1</b>, wrong order = <b>−1</b>; the score,
+        correct/wrong counts and your best result are always on screen.</li>
       <li>📱 <b>On a phone:</b> use the D-pad under the maze, or drag on the maze like a joystick
         (the pac-man moves while you hold and stops when you let go). You can also add the game to
         your home screen and play offline.</li>

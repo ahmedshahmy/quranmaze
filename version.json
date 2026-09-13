@@ -1,5 +1,5 @@
 {
-  "build": "2026-09-13.6",
+  "build": "2026-09-13.7",
   "words": 73,
   "letters": 228,
   "mazes": [
@@ -8,5 +8,5 @@
     "phone 17x29",
     "phoneS 17x23"
   ],
-  "notes": "word + meaning card after each correct answer"
+  "notes": "score counter + reset button (backspace button removed); word meaning card"
 }

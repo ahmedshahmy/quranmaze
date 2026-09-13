@@ -42,7 +42,7 @@
   }
   /* bump on every release — shown in the UI and compared with version.json so
      a stale cached build can be spotted (and reloaded) at a glance */
-  var BUILD = '2026-09-13.6';
+  var BUILD = '2026-09-13.7';
 
   var AR_FONT = '"Amiri","Geeza Pro","Noto Naskh Arabic","Traditional Arabic","Scheherazade New","Segoe UI",Tahoma,sans-serif';
   var EN_FONT = '"Segoe UI",Tahoma,Arial,sans-serif';
@@ -87,6 +87,10 @@
   var sheikhMsgCooldown = 0;
   var checkLockT = 0;
   var soundOn = true;
+  var BEST_KEY = 'quran-maze-best';
+  function loadBest() { try { return parseInt(localStorage.getItem(BEST_KEY), 10) || 0; } catch (e) { return 0; } }
+  function saveBest(v) { try { localStorage.setItem(BEST_KEY, String(v)); } catch (e) {} }
+  var bestScore = loadBest();
   var timers = [];          // active setTimeout handles (cleared on unload/word switch)
   var rafId = null, lastT = 0;
 
@@ -390,6 +394,22 @@
   var wordCardTimer = null;
   function clearTimers() { timers.forEach(clearTimeout); timers = []; }
 
+  function setText(id, value) {
+    var el = document.getElementById(id);
+    if (el && el.textContent !== value) el.textContent = value;
+  }
+
+  /* the little +1 / -1 that floats up over the maze */
+  function floatScore(delta) {
+    var host = document.getElementById('scoreFloats');
+    if (!host) return;
+    var el = document.createElement('span');
+    el.className = 'scoreFloat ' + (delta > 0 ? 'up' : 'down');
+    el.textContent = (delta > 0 ? '+1' : '\u22121');
+    host.appendChild(el);
+    setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, 1200);
+  }
+
   function syncUI() {
     chipWord.textContent = 'Word ' + (wordIndex + 1) + ' / ' + totalWords;
     chipMarks.textContent = marks;
@@ -404,6 +424,14 @@
     chip('🧯', 'extinguisher', held.fire);
     renderTray();
     // check button availability
+    // score HUD over the maze + the scoreboard in the panel
+    setText('hudScore', String(marks));
+    setText('hudCorrect', '\u2705 ' + correctN);
+    setText('hudWrong', '\u274C ' + wrongN);
+    setText('statScore', String(marks));
+    setText('statCorrect', String(correctN));
+    setText('statWrong', String(wrongN));
+    setText('statBest', String(bestScore));
     var near = playerNearSheikh();
     var checks = document.querySelectorAll('.js-check');
     for (var ci = 0; ci < checks.length; ci++) checks[ci].classList.toggle('on', near);
@@ -682,6 +710,8 @@
     for (var i = 0; i < total; i++) if (tray[i] !== word.letters[i]) { ok = false; break; }
     if (ok) {
       correctN++; marks++;
+      if (marks > bestScore) { bestScore = marks; saveBest(bestScore); }
+      floatScore(1);
       if (wordsPlayed.indexOf(word) === -1) wordsPlayed.push(word);
       checkLockT = time + 4.2; // block re-check until the next word arrives
       syncUI();
@@ -694,6 +724,7 @@
       after(3000, nextWord);
     } else {
       wrongN++; marks--;
+      floatScore(-1);
       checkLockT = time + 3.8; // block re-check while the sheikh re-scatters letters
       syncUI();
       sfxWrong();
@@ -1004,7 +1035,6 @@
     if (phase === 'playing') { ensureAudio(); reciteWord(word, {}); }
   });
   onAll('.js-check', 'click', function () { checkWithSheikh(); });
-  onAll('.js-drop', 'click', function () { dropLetterAt(tray.length - 1); });
   onAll('.js-reset', 'click', function () { returnToStart(); });
   onAll('.js-fs', 'click', toggleFullscreen);
   $('btnSound').addEventListener('click', function () {
@@ -1016,7 +1046,8 @@
   /* ================= end screen ================= */
   function showEndScreen() {
     var st = $('endStats');
-    st.textContent = 'Marks: ' + marks + '   •   Correct: ' + correctN + '   •   Wrong: ' + wrongN;
+    st.textContent = '\u2B50 Score: ' + marks + '   \u2022   \u2705 Correct: ' + correctN +
+                     '   \u2022   \u274C Wrong: ' + wrongN + '   \u2022   \uD83C\uDFC6 Best: ' + bestScore;
     var list = $('endList');
     list.innerHTML = '';
     (wordsPlayed.length ? wordsPlayed : WORDS).forEach(function (w) {
@@ -1639,6 +1670,16 @@
                 if (card.textContent.indexOf(checkedWord.meaning) === -1) failures.push('meaning card missing the meaning');
                 if (card.textContent.indexOf(checkedWord.translit) === -1) failures.push('meaning card missing the transliteration');
               }
+              var hud = document.getElementById('hudScore');
+              if (!hud || hud.textContent !== String(marks)) {
+                failures.push('score HUD out of sync: ' + (hud && hud.textContent) + ' vs ' + marks);
+              }
+              var stat = document.getElementById('statScore');
+              if (!stat || stat.textContent !== String(marks)) failures.push('scoreboard out of sync');
+              if (bestScore < marks) failures.push('best score not tracked: ' + bestScore + ' < ' + marks);
+              try {
+                if (parseInt(localStorage.getItem(BEST_KEY), 10) !== bestScore) failures.push('best score not persisted');
+              } catch (e) { /* storage unavailable */ }
             });
           }
           after(3800, function () {
@@ -1653,6 +1694,10 @@
               if (wordIndex !== idx0 + 1) failures.push('correct check should advance the word');
             }
             if (testMovementFailure) failures.push(testMovementFailure);
+            if (mode === 'wrong') {
+              var hudW = document.getElementById('hudScore');
+              if (!hudW || hudW.textContent !== String(marks)) failures.push('score HUD wrong after a wrong answer');
+            }
             console.log('AUTOTEST RESULT ' + (failures.length ? 'FAIL [' + failures.join(', ') + ']' : 'PASS') +
                         ' mode=' + mode + ' marks=' + marks + ' word=' + wordIndex +
                         ' zones=' + zonesPlaced + '/' + zc + ' tray=' + tray.join(''));
@@ -1822,7 +1867,9 @@
               meaning: (word && word.meaning) || null,
               cardVisible: !!(document.getElementById('wordCard') && document.getElementById('wordCard').classList.contains('show')),
               order: runOrder.slice(0, 8).map(function (i) { return WORDS[i].id; }),
-              marks: marks, tray: tray.slice(),
+              marks: marks, correct: correctN, wrong: wrongN, best: bestScore,
+              hud: (document.getElementById('hudScore') || {}).textContent || null,
+              tray: tray.slice(),
               held: { boat: held.boat, fire: held.fire },
               letters: letters.map(function (l) { return { g: l.glyph, r: l.r, c: l.c, taken: l.taken, zone: zoneOf(l.r) }; })
             };
