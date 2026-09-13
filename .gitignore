@@ -6,3 +6,6 @@ __pycache__/
 # OS junk
 .DS_Store
 Thumbs.db
+
+# local push key (never commit)
+.git-ssh/
