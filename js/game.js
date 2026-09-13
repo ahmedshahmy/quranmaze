@@ -657,14 +657,19 @@
   /* ================= movement ================= */
   function desiredDir() {
     if (!dirOrder.length) return null;
-    return dirOrder[dirOrder.length - 1];
+    var name = dirOrder[dirOrder.length - 1];
+    var idx = DIR_KEYS[name];
+    return (idx === undefined) ? null : idx; // index into DIRS, not the name
   }
   function stepKind(r, c, dirIdx) {
     // what kind of tile the player would land on moving one cell toward dirIdx
-    return kindAt(r + DIRS[dirIdx].dr, c + DIRS[dirIdx].dc);
+    var d = DIRS[dirIdx];
+    if (!d) return 'wall';
+    return kindAt(r + d.dr, c + d.dc);
   }
   function tryStartMove(dir) {
     if (freezeT > 0 || phase !== 'playing' || player.moving) return false;
+    if (!DIRS[dir]) return false;
     var k = stepKind(player.r, player.c, dir);
     if (k === 'wall' || k === 'sheikh') return false;
     if (k === 'water') {
@@ -1215,15 +1220,40 @@
     player.r = r; player.c = c; player.moving = false; player.prog = 0;
     onArriveCell();
   }
+  /* Walk one cell at a time through the REAL input + game-loop path
+     (pressDir -> updatePlayer -> onArriveCell), so movement bugs are caught. */
   function testWalkChain(cells, done) {
     var i = 0;
     (function tick() {
       if (i >= cells.length) { done(); return; }
-      testArrive(cells[i].r, cells[i].c);
+      var target = cells[i];
+      if (player.r === target.r && player.c === target.c) { i++; after(6, tick); return; }
+      var dr = target.r - player.r, dc = target.c - player.c;
+      if (Math.abs(dr) + Math.abs(dc) !== 1) {
+        testMovementFailure = 'path out of sync at ' + player.r + ',' + player.c + ' -> ' + target.r + ',' + target.c;
+        done();
+        return;
+      }
+      var name = dr < 0 ? 'up' : (dr > 0 ? 'down' : (dc > 0 ? 'right' : 'left'));
+      // step exactly one cell, synchronously, through the real movement code
+      var guard = 0;
+      while (guard++ < 40) {
+        if (freezeT > 0) freezeT = 0;
+        if (!player.moving) pressDir(name);
+        updatePlayer(0.05);
+        if (!player.moving && player.r === target.r && player.c === target.c) break;
+      }
+      releaseDir(name);
+      if (player.r !== target.r || player.c !== target.c) {
+        testMovementFailure = 'stuck walking to ' + target.r + ',' + target.c + ' at ' + player.r + ',' + player.c;
+        done();
+        return;
+      }
       i++;
-      after(45, tick);
+      after(6, tick);
     })();
   }
+  var testMovementFailure = null;
   /* corridor-only BFS from the player start to a tile next to the sheikh */
   function testSafePath() {
     var startKey = player.r + ',' + player.c;
@@ -1317,6 +1347,7 @@
     }
 
     gridSanity();
+    try { draw(); } catch (e) { failures.push('render threw: ' + e.message); }
     var idx0 = wordIndex;
     var target = WORDS[wordIndex].letters.slice();
     var walkGlyphs = (mode === 'wrong') ? target.slice(1).concat(target[0]) : target;
@@ -1328,6 +1359,10 @@
       else {
         testPlaceLetters(walkGlyphs, cells);
         hazardLogic();
+        resetPlayer();          // the hazard probe displaced the player
+        tray = [];
+        held.boat = 0; held.fire = 0;
+        syncUI();
         // real placement must spread letters over every zone
         placeLetters(WORDS[wordIndex]);
         var zc = maze.meta.hazardRows.length + 1;
@@ -1361,6 +1396,7 @@
               if (marks !== marksBefore + 1) failures.push('correct check should be +1 mark');
               if (wordIndex !== idx0 + 1) failures.push('correct check should advance the word');
             }
+            if (testMovementFailure) failures.push(testMovementFailure);
             console.log('AUTOTEST RESULT ' + (failures.length ? 'FAIL [' + failures.join(', ') + ']' : 'PASS') +
                         ' mode=' + mode + ' marks=' + marks + ' word=' + wordIndex +
                         ' zones=' + zonesPlaced + '/' + zc + ' tray=' + tray.join(''));

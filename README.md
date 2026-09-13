@@ -168,8 +168,9 @@ Built-in browser tests (print `AUTOTEST RESULT ...` to the console):
 * `index.html?autostart` — skip the start screen
 * `index.html?word=N` — jump to word N (0–11)
 * `index.html?autotest=ok` — verify hazard blocking/consumption, that letters are
-  placed in all 3 areas and on walkable tiles, then play one word correctly:
-  expect **+1** and the next word
+  placed in all 3 areas and on walkable tiles, that a frame renders, then play one
+  word correctly **through the real input/movement code** (press direction → game
+  loop → pickups): expect **+1** and the next word
 * `index.html?autotest=wrong` — collect in the wrong order: expect **−1**, the
   same word, an empty tray and the letters re-scattered
 * `index.html?autotest=all` — auto-play all 12 words: expect the end screen and
