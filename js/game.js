@@ -18,13 +18,24 @@
 
   /* ---------------- helpers ---------------- */
   function $(id) { return document.getElementById(id); }
-  function rand(a, b) { return a + Math.random() * (b - a); }
+  /* seedable RNG: ?seed=N makes the whole game deterministic (used by tests) */
+  var rngState = null; // null -> Math.random
+  function rnd() {
+    if (rngState === null) return Math.random();
+    // mulberry32
+    rngState |= 0;
+    rngState = (rngState + 0x6D2B79F5) | 0;
+    var t = Math.imul(rngState ^ (rngState >>> 15), 1 | rngState);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  }
+  function rand(a, b) { return a + rnd() * (b - a); }
   function rint(a, b) { return Math.floor(rand(a, b + 1)); }
   function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
-  function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+  function pick(arr) { return arr[Math.floor(rnd() * arr.length)]; }
   function shuffle(arr) {
     for (var i = arr.length - 1; i > 0; i--) {
-      var j = Math.floor(Math.random() * (i + 1));
+      var j = Math.floor(rnd() * (i + 1));
       var t = arr[i]; arr[i] = arr[j]; arr[j] = t;
     }
     return arr;
@@ -597,6 +608,7 @@
     for (var i = 0; i < total; i++) if (tray[i] !== word.letters[i]) { ok = false; break; }
     if (ok) {
       correctN++; marks++;
+      if (wordsPlayed.indexOf(word) === -1) wordsPlayed.push(word);
       checkLockT = time + 4.2; // block re-check until the next word arrives
       syncUI();
       sfxCorrect();
@@ -643,7 +655,7 @@
   /* ================= word lifecycle ================= */
   function startWord() {
     phase = 'playing';
-    word = WORDS[wordIndex];
+    word = currentWord();
     tray = [];
     resetPlayer();
     placeLetters(word);
@@ -858,7 +870,9 @@
     Speech.refreshVoices();
     $('menu').classList.add('hidden');
     phase = 'playing';
-    if (typeof forcedStartIndex === 'number') { wordIndex = forcedStartIndex; forcedStartIndex = undefined; }
+    runOrder = pickRunOrder();          // fresh random word order every game
+    wordsPlayed = [];
+    if (typeof forcedStartIndex === 'number') { wordIndex = Math.min(forcedStartIndex, runOrder.length - 1); forcedStartIndex = undefined; }
     else wordIndex = 0;
     loadMaze(pickMazeId()); // the orientation may have changed since the menu
     marks = 0; correctN = 0; wrongN = 0;
@@ -867,11 +881,39 @@
     cv.focus && cv.focus();
   }
   var forcedStartIndex;
+  var runOrder = [];        // play order for this game (randomised)
+  var wordsPlayed = [];     // words completed correctly, in play order
+
+  function shuffleList(arr) { return shuffle(arr.slice()); }
+
+  /* Build the order of words for one game: fully random, but the first two
+     rounds are drawn from the shortest words so a session still starts gently. */
+  function makeRunOrder() {
+    var short = [], rest = [];
+    for (var i = 0; i < WORDS.length; i++) {
+      (WORDS[i].letters.length <= 3 ? short : rest).push(i);
+    }
+    short = shuffle(short);   // shuffle() shuffles in place and returns the array
+    rest = shuffle(rest);
+    var warm = Math.min(2, short.length);
+    var order = short.slice(0, warm);
+    return order.concat(shuffle(short.slice(warm).concat(rest)));
+  }
+
+  function pickRunOrder() { return makeRunOrder(); }
+
+  function wordAt(index) {
+    if (index < 0 || index >= runOrder.length) return WORDS[0];
+    return WORDS[runOrder[index]];
+  }
+  function currentWord() { return wordAt(wordIndex); }
   var autoTestCount = Infinity;
   $('btnStart').addEventListener('click', startGame);
   $('btnAgain').addEventListener('click', function () {
     ensureAudio();
     $('end').classList.add('hidden');
+    runOrder = pickRunOrder();
+    wordsPlayed = [];
     wordIndex = 0;
     marks = 0; correctN = 0; wrongN = 0;
     loadMaze(pickMazeId());
@@ -900,7 +942,7 @@
     st.textContent = 'Marks: ' + marks + '   •   Correct: ' + correctN + '   •   Wrong: ' + wrongN;
     var list = $('endList');
     list.innerHTML = '';
-    WORDS.forEach(function (w) {
+    (wordsPlayed.length ? wordsPlayed : WORDS).forEach(function (w) {
       var li = document.createElement('div');
       li.className = 'endWord';
       li.innerHTML = '<div class="ewL">' + w.letters.join('  ') + '</div>' +
@@ -1456,7 +1498,7 @@
     gridSanity();
     try { draw(); } catch (e) { failures.push('render threw: ' + e.message); }
     var idx0 = wordIndex;
-    var target = WORDS[wordIndex].letters.slice();
+    var target = currentWord().letters.slice();
     var walkGlyphs = (mode === 'wrong') ? target.slice(1).concat(target[0]) : target;
     var path = testSafePath();
     if (!path) failures.push('no hazard-free path from player to sheikh');
@@ -1471,7 +1513,7 @@
         held.boat = 0; held.fire = 0;
         syncUI();
         // real placement must spread letters over every zone
-        placeLetters(WORDS[wordIndex]);
+        placeLetters(currentWord());
         var zc = maze.meta.hazardRows.length + 1;
         barrierCrossing();
         lettersReachable();
@@ -1529,7 +1571,7 @@
     function doWord(idx, done) {
       after(80, function () {
         if (wordIndex !== idx) failures.push('expected word ' + idx + ' got ' + wordIndex);
-        var target = WORDS[idx].letters;
+        var target = wordAt(idx).letters;
         var cells = testLetterCells(path, target.length);
         if (!cells) { failures.push('path too short for word ' + idx); done(); return; }
         testPlaceLetters(target, cells);
@@ -1575,7 +1617,7 @@
   /* ================= boot ================= */
   function previewMaze() {
     loadMaze(pickMazeId());
-    word = WORDS[0];
+    word = currentWord();
     tray = [];
     resetPlayer();
     placeLetters(word);
@@ -1605,7 +1647,8 @@
       if (document.hidden) Speech.stop();
     });
     // initial idle view behind menu: letters preview of first word so scene looks alive
-    word = WORDS[0];
+    if (!runOrder.length) runOrder = makeRunOrder();
+    word = currentWord();
     resetPlayer();
     placeLetters(word);
     resetTokens();
@@ -1617,6 +1660,8 @@
     // an end-to-end logic test and prints AUTOTEST RESULT to the console
     try {
       var qs = new URLSearchParams(location.search);
+      var seed = qs.get('seed');
+      if (seed !== null) rngState = (parseInt(seed, 10) || 1) | 0;
       var cnt = qs.get('count');
       if (cnt !== null) autoTestCount = Math.max(1, parseInt(cnt, 10) || 12);
       var mz = qs.get('maze');
@@ -1639,7 +1684,10 @@
           state: function () {
             return {
               maze: maze.id, cols: C, rows: R, tile: TILE, phase: phase,
-              word: wordIndex, marks: marks, tray: tray.slice(),
+              word: wordIndex, total: runOrder.length,
+              wordId: (word && word.id) || null,
+              order: runOrder.slice(0, 8).map(function (i) { return WORDS[i].id; }),
+              marks: marks, tray: tray.slice(),
               held: { boat: held.boat, fire: held.fire },
               letters: letters.map(function (l) { return { g: l.glyph, r: l.r, c: l.c, taken: l.taken, zone: zoneOf(l.r) }; })
             };

@@ -56,7 +56,13 @@ recordings served by `audio.qurancdn.com` (Quran.com). Each clip's ayah/word
 position was resolved and verified with `tools/resolve-audio.js` against
 `api.quran.com`.
 
-## Words (**73**, increasing difficulty — 228 letters)
+## Words (**73** — 228 letters, played in a **random order**)
+
+Every game (Start / Play again) reshuffles the whole word list, so you get a
+different word — and a different maze layout for it — each round. The first two
+rounds are drawn from the shortest words so a session still starts gently; after
+that it is fully random. `?seed=N` makes a session reproducible (used by the
+tests), e.g. `index.html?seed=42`.
 
 The first 12 are the starter set; **61 more were added and verified** with
 `tools/build-words.js`, which scans the whole Qur'an for a real occurrence of
@@ -232,6 +238,7 @@ Built-in browser tests (print `AUTOTEST RESULT ...` to the console):
 * `index.html?autotest=all` — auto-play all 12 words: expect the end screen and
   marks 12
 * `index.html?maze=wide|tall` — force a maze
+* `index.html?seed=N` — deterministic word order + letter placement
 * `index.html?autotest=all&count=12` — marathon over just the first 12 words
   (the full run covers all 73)
 * `index.html?debug` — expose a read-only state hook (`window.__qp.state()`,
