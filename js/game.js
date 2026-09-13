@@ -672,14 +672,22 @@
     if (!DIRS[dir]) return false;
     var k = stepKind(player.r, player.c, dir);
     if (k === 'wall' || k === 'sheikh') return false;
+    /* One item per barrier ENTRY: stepping into water/fire from normal ground
+       costs an item, while moving around once you are on the same barrier is
+       free. (Charging per tile made walking along a barrier impossible.) */
+    var standingOn = kindAt(player.r, player.c);
     if (k === 'water') {
-      if (held.boat <= 0) { blockedHint('water'); return false; }
-      consume('boat');
-      splash(true);
+      if (standingOn !== 'water') {
+        if (held.boat <= 0) { blockedHint('water'); return false; }
+        consume('boat');
+        splash(true);
+      }
     } else if (k === 'fire') {
-      if (held.fire <= 0) { blockedHint('fire'); return false; }
-      consume('fire');
-      splash(false);
+      if (standingOn !== 'fire') {
+        if (held.fire <= 0) { blockedHint('fire'); return false; }
+        consume('fire');
+        splash(false);
+      }
     }
     player.facing = dir;
     player.moving = true;
@@ -1186,6 +1194,12 @@
       due.forEach(function (p) {
         if (aliveCount(p.type) < MAX_ALIVE) spawnToken(p.type);
       });
+      // safety net: if the player holds nothing and no item of a type exists
+      // anywhere (nor is one on its way), put one within reach right away
+      ['boat', 'fire'].forEach(function (type) {
+        var coming = pendingSpawns.some(function (p) { return p.type === type; });
+        if (held[type] === 0 && aliveCount(type) === 0 && !coming) spawnToken(type);
+      });
       time += dt;
       updatePlayer(dt);
     } else {
@@ -1340,6 +1354,78 @@
         player.r = probe.r; player.c = probe.c;
       });
     }
+    /* --- regression: barrier crossing must cost ONE item per entry, and
+       walking along a barrier must be free (this was the "unreachable letter"
+       bug: charging per tile made band-walking impossible) --- */
+    function barrierCrossing() {
+      for (var bi = 0; bi < maze.meta.hazardRows.length; bi++) {
+        var row = maze.meta.hazardRows[bi];
+        var type = tileKinds[row][1];
+        if (type !== 'water' && type !== 'fire') continue;
+        var key = (type === 'water') ? 'boat' : 'fire';
+        for (var c = 1; c < C - 1; c++) {
+          if (tileKinds[row][c] !== type) continue;
+          if (kindAt(row - 1, c) !== 'corridor' || kindAt(row + 1, c) !== 'corridor') continue;
+          // 1) enter the barrier with exactly one item
+          player.r = row - 1; player.c = c; player.moving = false; player.prog = 0;
+          held.boat = 0; held.fire = 0; held[key] = 1;
+          if (!tryStartMove(2)) { failures.push('cannot enter ' + type + ' holding one item'); break; }
+          if (held[key] !== 0) failures.push(type + ' entry should consume exactly one item');
+          // 2) leave on the far side with no items left
+          player.r = player.tr; player.c = player.tc; player.moving = false; player.prog = 0;
+          onArriveCell();
+          if (!tryStartMove(2)) failures.push('cannot step out of ' + type + ' (should be free)');
+          // 3) walking ALONG the barrier must be free too
+          player.r = row; player.c = c; player.moving = false; player.prog = 0;
+          held.boat = 0; held.fire = 0;
+          var along = (tileKinds[row][c + 1] === type) ? 1 : ((tileKinds[row][c - 1] === type) ? 3 : null);
+          if (along !== null && !tryStartMove(along)) {
+            failures.push('walking along ' + type + ' must be free (no item)');
+          }
+          player.moving = false; player.prog = 0;
+          resetPlayer(); tray = []; held.boat = 0; held.fire = 0; syncUI();
+          return;
+        }
+      }
+    }
+
+    /* --- regression: every letter the game actually placed must be reachable
+       within one barrier entry (0-1 BFS over the live grid) --- */
+    function lettersReachable() {
+      var best = {}, dist = {};
+      var startKey = player.r + ',' + player.c + ',0';
+      dist[startKey] = 0;
+      var queue = [[player.r, player.c, 0, 0]];
+      var hazardId = function (kind) { return kind === 'water' ? 1 : (kind === 'fire' ? 2 : 0); };
+      while (queue.length) {
+        var cur = queue.shift();
+        var r = cur[0], c = cur[1], on = cur[2], used = cur[3];
+        if (dist[r + ',' + c + ',' + on] < used) continue;
+        var k = r + ',' + c;
+        if (best[k] === undefined || used < best[k]) best[k] = used;
+        for (var i = 0; i < 4; i++) {
+          var nr = r + DIRS[i].dr, nc = c + DIRS[i].dc;
+          var kind = kindAt(nr, nc);
+          if (kind === 'wall' || kind === 'sheikh') continue;
+          var hid = hazardId(kind);
+          var cost = (hid && on !== hid) ? 1 : 0;
+          var nused = used + cost;
+          if (nused > 1) continue;
+          var nk = nr + ',' + nc + ',' + (hid || 0);
+          if (dist[nk] === undefined || dist[nk] > nused) {
+            dist[nk] = nused;
+            queue.push([nr, nc, hid || 0, nused]);
+          }
+        }
+      }
+      letters.forEach(function (l) {
+        var k = l.r + ',' + l.c;
+        var cost = best[k];
+        if (cost === undefined) failures.push('letter ' + l.glyph + ' at ' + k + ' is unreachable');
+        else if (cost > 1) failures.push('letter ' + l.glyph + ' at ' + k + ' needs ' + cost + ' barrier entries');
+      });
+    }
+
     function zonesUsedByLetters() {
       var zs = {};
       letters.forEach(function (l) { zs[zoneOf(l.r)] = true; });
@@ -1366,6 +1452,8 @@
         // real placement must spread letters over every zone
         placeLetters(WORDS[wordIndex]);
         var zc = maze.meta.hazardRows.length + 1;
+        barrierCrossing();
+        lettersReachable();
         var zonesPlaced = zonesUsedByLetters();
         if (zonesPlaced < Math.min(zc, target.length)) {
           failures.push('letters only in ' + zonesPlaced + ' of ' + zc + ' zones');

@@ -21,7 +21,7 @@
     id: 'wide',
     rows: [
         '###########################',
-        '#.#...........#...........#',
+        '#.............#...........#',
         '#.#.###.#.#####.#.###.#####',
         '#.#...#...#.....#...#.....#',
         '#.#####.###.#######.#####.#',
@@ -36,7 +36,7 @@
         '#.#...#....S#.#.#...#.....#',
         '#.#.#######.#.#.###.#.###.#',
         '#^^^^^^^^^^^^^^^^^^^^^^^^^#',
-        '#.#.#.#.#.#######.#.#####.#',
+        '#.#...#.#.#######.#.#####.#',
         '#...#.#.#...#.....#.....#.#',
         '#.###.#.#.#.#.###.#####.#.#',
         '#...#...#.#.#...#.#...#.#.#',
@@ -56,7 +56,7 @@
         '#.#...#...........#',
         '#.#.#.#.#########.#',
         '#...#.#.......#...#',
-        '#####.#.#.###.#.###',
+        '#####.#.#.###.#.#.#',
         '#.....#.#.#...#.#.#',
         '#.#.#.#.#.#.###.#.#',
         '#~~~~~~~~~~~~~~~~~#',
@@ -70,7 +70,7 @@
         '#..S#...#.#.#.....#',
         '#.#.###.#.#.#####.#',
         '#^^^^^^^^^^^^^^^^^#',
-        '#.#######.#.#.#####',
+        '#.#######...#.#####',
         '#.........#.#.....#',
         '###.#.#.#########.#',
         '#...#...#...#...#.#',
@@ -278,6 +278,91 @@
     return maze;
   }
 
+  /* ---------- level-design analysis (validation) ---------- */
+
+  /* Safe (non-hazard) regions inside one area of the maze. A healthy maze has
+     exactly ONE; two or more means a letter could sit in a pocket that can only
+     be reached by walking along a hazard band (i.e. "unreachable" in practice). */
+  function safeRegionsInRows(maze, r0, r1) {
+    var C = maze.rows[0].length;
+    var seen = new Set(), sizes = [];
+    for (var r = r0; r <= r1; r++) {
+      for (var c = 1; c < C - 1; c++) {
+        if (tileTypeAt(maze, r, c) !== 'corridor') continue;
+        var key = r + ',' + c;
+        if (seen.has(key)) continue;
+        var stack = [key];
+        seen.add(key);
+        var n = 0;
+        while (stack.length) {
+          var parts = stack.pop().split(',');
+          var rr = +parts[0], cc = +parts[1];
+          n++;
+          var dirs = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+          for (var i = 0; i < 4; i++) {
+            var nr = rr + dirs[i][0], nc = cc + dirs[i][1];
+            if (nr < r0 || nr > r1 || nc < 1 || nc > C - 2) continue;
+            if (tileTypeAt(maze, nr, nc) !== 'corridor') continue;
+            var nk = nr + ',' + nc;
+            if (!seen.has(nk)) { seen.add(nk); stack.push(nk); }
+          }
+        }
+        sizes.push(n);
+      }
+    }
+    return sizes.sort(function (a, b) { return b - a; });
+  }
+
+  /* Minimum number of barrier ENTRIES needed to reach each corridor tile,
+     using the real game rule: entering water/fire from a normal tile costs one
+     item, while moving around on the same barrier is free. */
+  function reachCosts(maze, maxEntries) {
+    var R = maze.rows.length, C = maze.rows[0].length;
+    var p = mazePlayerPos(maze);
+    var bestUsed = {}, dist = {};
+    var startKey = p.r + ',' + p.c + ',0';
+    dist[startKey] = 0;
+    var queue = [[p.r, p.c, 0, 0]];
+    var hazardId = function (ch) { return ch === '~' ? 1 : (ch === '^' ? 2 : 0); };
+    while (queue.length) {
+      var cur = queue.shift();
+      var r = cur[0], c = cur[1], on = cur[2], used = cur[3];
+      if (dist[r + ',' + c + ',' + on] < used) continue;
+      var tileKey = r + ',' + c;
+      if (bestUsed[tileKey] === undefined || used < bestUsed[tileKey]) bestUsed[tileKey] = used;
+      var dirs = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+      for (var i = 0; i < 4; i++) {
+        var nr = r + dirs[i][0], nc = c + dirs[i][1];
+        if (nr < 0 || nc < 0 || nr >= R || nc >= C) continue;
+        var ch = maze.rows[nr][nc];
+        if (!isWalkableChar(ch)) continue;
+        var hid = hazardId(ch);
+        var cost = 0, newOn = 0;
+        if (hid) {
+          if (on === hid) { cost = 0; newOn = hid; }
+          else { cost = 1; newOn = hid; }
+        }
+        var nused = used + cost;
+        if (nused > maxEntries) continue;
+        var nk = nr + ',' + nc + ',' + newOn;
+        if (dist[nk] === undefined || dist[nk] > nused) {
+          dist[nk] = nused;
+          queue.push([nr, nc, newOn, nused]);
+        }
+      }
+    }
+    var max = 0, worst = null;
+    for (var r2 = 1; r2 < R - 1; r2++) {
+      for (var c2 = 1; c2 < C - 1; c2++) {
+        if (tileTypeAt(maze, r2, c2) !== 'corridor') continue;
+        var k2 = r2 + ',' + c2;
+        if (bestUsed[k2] === undefined) return { unreachable: k2, max: Infinity };
+        if (bestUsed[k2] > max) { max = bestUsed[k2]; worst = k2; }
+      }
+    }
+    return { max: max, worst: worst, costs: bestUsed };
+  }
+
   /* ---------- validation ---------- */
   function validateMaze(maze) {
     var errors = [];
@@ -320,7 +405,31 @@
     Object.keys(zoneCounts).forEach(function (z) {
       if (zoneCounts[z] < 8) errors.push('zone ' + z + ' has only ' + zoneCounts[z] + ' safe tiles');
     });
-    return { ok: errors.length === 0, errors: errors, unreachable: unreachable, zones: zoneCounts, R: R, C: C };
+
+    /* every area must be ONE safe region (no pockets that need extra crossings) */
+    var bands = maze.meta.hazardRows;
+    var zoneRanges = [[1, bands[0] - 1]];
+    for (var bi = 0; bi < bands.length - 1; bi++) zoneRanges.push([bands[bi] + 1, bands[bi + 1] - 1]);
+    zoneRanges.push([bands[bands.length - 1] + 1, R - 2]);
+    var regionInfo = [];
+    zoneRanges.forEach(function (zr, idx) {
+      var parts = safeRegionsInRows(maze, zr[0], zr[1]);
+      regionInfo.push(parts.length);
+      if (parts.length !== 1) {
+        errors.push('zone ' + idx + ' is split into ' + parts.length + ' regions ' + JSON.stringify(parts));
+      }
+    });
+
+    /* every tile must be reachable within a small item budget (1 in + 1 out) */
+    var reach = reachCosts(maze, 3);
+    if (reach.unreachable) errors.push('tile not reachable at all: ' + reach.unreachable);
+    else if (reach.max > 3) errors.push('tile needs ' + reach.max + ' barrier entries: ' + reach.worst);
+
+    return {
+      ok: errors.length === 0, errors: errors, unreachable: unreachable,
+      zones: zoneCounts, regions: regionInfo, maxEntries: reach.max,
+      R: R, C: C
+    };
   }
 
   function dumpMaze(maze) { return maze.rows.join('\n'); }
@@ -330,6 +439,7 @@
     prepareMaze: prepareMaze, validateMaze: validateMaze,
     floodAll: floodAll, safeComponentFrom: safeComponentFrom, safeFlood: safeFlood,
     zoneOfRow: zoneOfRow, tileTypeAt: tileTypeAt, dumpMaze: dumpMaze,
+    safeRegionsInRows: safeRegionsInRows, reachCosts: reachCosts,
     isHazardType: isHazardType, isWalkableChar: isWalkableChar
   };
 

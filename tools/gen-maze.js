@@ -80,22 +80,48 @@ function generate(cfg) {
   // 4) hazard bands across the full width
   for (const [row, ch] of cfg.bands) for (let c = 1; c < C - 1; c++) g[row][c] = ch;
 
-  // 5) guarantee openings between every band and the areas above/below it
+  // 5) openings between every band and the areas above/below it, including at
+  //    least two ALIGNED columns so a straight (1 item) crossing always exists
   for (const [row] of cfg.bands) {
     ensureOpenings(g, row - 1, 3, rnd, R, C);
     ensureOpenings(g, row + 1, 3, rnd, R, C);
+    alignOpenings(g, row, R, C);
   }
 
-  // 6) the middle area must be internally connected with safe tiles only
-  const midTop = cfg.bands[0][0] + 1, midBottom = cfg.bands[1][0] - 1;
-  connectZone(g, midTop, midBottom, R, C);
+  // 6) EVERY area must be internally connected using safe tiles only. Without
+  //    this a letter could sit in a pocket that can only be reached by walking
+  //    along a hazard band (extra items / seemingly unreachable).
+  const zones = [
+    [1, cfg.bands[0][0] - 1],
+    [cfg.bands[0][0] + 1, cfg.bands[1][0] - 1],
+    [cfg.bands[1][0] + 1, R - 2]
+  ];
+  for (const [zr0, zr1] of zones) connectZone(g, zr0, zr1, R, C);
 
   // 7) player + sheikh: the two cells farthest apart inside the middle area
-  const ends = placeEndpoints(g, midTop, midBottom, R, C);
+  const ends = placeEndpoints(g, zones[1][0], zones[1][1], R, C);
   g[ends.P.r][ends.P.c] = 'P';
   g[ends.S.r][ends.S.c] = 'S';
 
   return g.map((row) => row.join(''));
+}
+
+/* make sure at least two columns are open on BOTH sides of a hazard band */
+function alignOpenings(g, bandRow, R, C) {
+  const above = [], below = [];
+  for (let c = 1; c < C - 1; c += 2) {
+    if (g[bandRow - 1][c] === '.') above.push(c);
+    if (g[bandRow + 1][c] === '.') below.push(c);
+  }
+  let need = 2 - above.filter((c) => below.indexOf(c) !== -1).length;
+  for (const c of above) {
+    if (need <= 0) break;
+    if (g[bandRow + 1][c] === '#') { g[bandRow + 1][c] = '.'; need--; }
+  }
+  for (const c of below) {
+    if (need <= 0) break;
+    if (g[bandRow - 1][c] === '#') { g[bandRow - 1][c] = '.'; need--; }
+  }
 }
 
 function ensureOpenings(g, wallRow, want, rnd, R, C) {
