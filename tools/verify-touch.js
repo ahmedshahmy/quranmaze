@@ -91,6 +91,13 @@ async function main() {
     check(after.r !== before.r || after.c !== before.c,
           `swipe (${swipeDir}) moves the player`, `${before.r},${before.c} -> ${after.r},${after.c}`);
 
+    // the joystick must stop when the finger is lifted (no locked direction)
+    const afterRelease = JSON.parse(await evalJs('JSON.stringify(window.__qp.pos())'));
+    await sleep(1400);
+    const later = JSON.parse(await evalJs('JSON.stringify(window.__qp.pos())'));
+    const drift = Math.abs(later.r - afterRelease.r) + Math.abs(later.c - afterRelease.c);
+    check(drift <= 1, 'movement stops when the finger is lifted', `drift ${drift} tile(s)`);
+
     // ---------- d-pad ----------
     const openNow = await evalJs('window.__qp.open()');
     const padDir = ['up', 'down', 'left', 'right'].find((d) => openNow[d] === 'corridor')

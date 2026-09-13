@@ -36,7 +36,8 @@ have **no speech voices at all** (`speechSynthesis.getVoices()` returns `[]`),
 which makes TTS-only games silent. Instead the game plays **real word-by-word
 Qur'an recitation**:
 
-1. **Bundled clips** — `audio/<word>.mp3` (shipped, 12 files, ~840 KB total)
+1. **Bundled clips** — `audio/<word>.mp3` (shipped, **73 files, ~3.9 MB**); the
+   first 12 are precached for offline play, the rest are cached as you play them
 2. **Online clips** — `audio.qurancdn.com/wbw/SSS_AAA_WWW.mp3` (per-word recitation)
 3. **System voice** — speech synthesis, only as a last resort
 
@@ -55,7 +56,17 @@ recordings served by `audio.qurancdn.com` (Quran.com). Each clip's ayah/word
 position was resolved and verified with `tools/resolve-audio.js` against
 `api.quran.com`.
 
-## Words (12, increasing difficulty)
+## Words (**73**, increasing difficulty — 228 letters)
+
+The first 12 are the starter set; **61 more were added and verified** with
+`tools/build-words.js`, which scans the whole Qur'an for a real occurrence of
+each word (preferring a bare form, i.e. without و/ف/ب/ل/ال prefixes), confirms
+the position against the words API, checks the word-by-word recitation clip and
+downloads it. Words whose Qur'anic spelling differs from the modern spelling
+(e.g. ٱلصَّلَوٰة) are reported and skipped rather than shipped wrong.
+
+The list below shows the starter words; run `node -e "console.log(require('./js/maze-data.js').WORDS.map(w=>w.id).join(' '))"`
+for all 73 ids.
 
 | # | Letters | Word | Meaning | Recited from |
 |---|---------|------|---------|--------------|
@@ -156,6 +167,8 @@ fills ~87% of the screen height on a desktop and ~98% in fullscreen. Use
 * Check at the sheikh: **Space / E** when standing next to him (or tap him)
 * Replay the word: **R** or **🔊 Listen**
 * Put a letter back: click it in the tray, or **⌫ أعد حرفًا**
+* **Backspace** (or the **↺ البداية** button) jumps the pac-man back to the start
+  of the maze — collected letters are kept, it is a shortcut, not a penalty
 
 ### On a phone
 
@@ -163,7 +176,9 @@ fills ~87% of the screen height on a desktop and ~98% in fullscreen. Use
   maze** (58 px buttons, 46 px in phone landscape) with big **Listen / Check**
   buttons, and in landscape the pad and panel move beside the maze so it stays
   tall (77% of the screen height).
-* Everything works by **swipe** as well — swipe on the maze to steer.
+* The maze also steers like a **joystick**: drag on it and the pac-man follows
+  your finger; **lift your finger and it stops** (it no longer stays locked in
+  one direction).
 * It is a **PWA**: open it in the phone browser and choose *Add to Home screen*
   to get a full-screen app icon; the app shell and all recitation clips are
   cached by the service worker, so it keeps working offline.
@@ -185,6 +200,7 @@ fills ~87% of the screen height on a desktop and ~98% in fullscreen. Use
 | `tools/publish.sh` | commit and push (GitHub Pages workflow included) |
 | `tools/verify-touch.js` | phone/touch verification (d-pad, swipe, layout) |
 | `tools/resolve-audio.js` | resolves + verifies each word's Qur'an recitation (api/audio.quran.com) |
+| `tools/build-words.js` | builds new words from `tools/words-source.js`: finds the Qur'anic occurrence, verifies it, downloads the clip, emits WORDS entries |
 | `tools/verify-audio.js` | drives a real browser over CDP to prove audio plays |
 | `tools/shot-canvas.js` | screenshots just the maze canvas via CDP |
 
@@ -216,6 +232,8 @@ Built-in browser tests (print `AUTOTEST RESULT ...` to the console):
 * `index.html?autotest=all` — auto-play all 12 words: expect the end screen and
   marks 12
 * `index.html?maze=wide|tall` — force a maze
+* `index.html?autotest=all&count=12` — marathon over just the first 12 words
+  (the full run covers all 73)
 * `index.html?debug` — expose a read-only state hook (`window.__qp.state()`,
   `__qp.pos()`, `__qp.open()`) used by the automated checks
 

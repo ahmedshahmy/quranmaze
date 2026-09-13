@@ -326,6 +326,7 @@
         <button class="btn big js-listen">🔊 <span lang="ar" dir="rtl">استمع</span> · Listen</button>
         <button class="btn ghost js-check">🤲 <span lang="ar" dir="rtl">تحقق</span> · Check</button>
         <button class="btn ghost js-drop touchActions-mobile-only">⌫ <span lang="ar" dir="rtl">أعد حرفًا</span></button>
+        <button class="btn ghost js-reset touchActions-mobile-only">↺ <span lang="ar" dir="rtl">البداية</span></button>
       </div>
     </div>
   </section>
@@ -336,6 +337,7 @@
     <div class="btnRow">
       <button class="btn ghost js-check" id="btnCheck">🤲 <span lang="ar" dir="rtl">تحقق</span></button>
       <button class="btn ghost js-drop" id="btnDrop">⌫ <span lang="ar" dir="rtl">أعد حرفًا</span></button>
+      <button class="btn ghost js-reset" id="btnReset">↺ <span lang="ar" dir="rtl">البداية</span></button>
       <button class="btn ghost" id="btnSound">🔊</button>
     </div>
 
@@ -357,7 +359,8 @@
     </div>
     <div class="keys">
       <kbd>←↑↓→</kbd>/<kbd>WASD</kbd> or swipe/d-pad · <kbd>Space</kbd> check ·
-      <kbd>R</kbd> replay word · tap a tray letter to put it back.
+      <kbd>R</kbd> replay word · <kbd>Backspace</kbd> or ↺ back to the start ·
+      tap a tray letter to put it back.
     </div>
   </aside>
 </main>
@@ -380,8 +383,11 @@
       <li class="ar" lang="ar" dir="rtl">4️⃣ بعد جمع كل الحروف، اذهب إلى الشيخ 🤲 ليُصحّح ترتيبك.</li>
       <li>4️⃣ With all letters collected, go to the <b>sheikh 🤲</b>: correct = <b>+1</b> and the
         next word · wrong = <b>−1</b> and he scatters the letters again.</li>
-      <li>📱 <b>On a phone:</b> use the D-pad under the maze or swipe on the maze; you can also
-        add the game to your home screen and play offline.</li>
+      <li>↺ <b>Lost in the maze?</b> Press <b>Backspace</b> (or the ↺ button) to jump back to the
+        start — your collected letters are kept.</li>
+      <li>📱 <b>On a phone:</b> use the D-pad under the maze, or drag on the maze like a joystick
+        (the pac-man moves while you hold and stops when you let go). You can also add the game to
+        your home screen and play offline.</li>
     </ul>
     <button class="btn big" id="btnStart" style="width:100%;">▶ <span lang="ar" dir="rtl">ابدأ اللعب</span> — Start</button>
   </div>

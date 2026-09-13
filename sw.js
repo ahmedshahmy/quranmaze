@@ -9,11 +9,8 @@
    Bump CACHE when you want to force a full refresh of cached media. */
 'use strict';
 
-var CACHE = 'quran-maze-v5';
+var CACHE = 'quran-maze-v6';
 var MEDIA = [
-  './icons/icon-192.png',
-  './icons/icon-512.png',
-  './icons/icon-maskable-512.png',
   './audio/noor.mp3',
   './audio/qamar.mp3',
   './audio/shams.mp3',
@@ -25,7 +22,10 @@ var MEDIA = [
   './audio/kitab.mp3',
   './audio/samaa.mp3',
   './audio/shifaa.mp3',
-  './audio/rahma.mp3'
+  './audio/rahma.mp3',
+  './icons/icon-192.png',
+  './icons/icon-512.png',
+  './icons/icon-maskable-512.png'
 ];
 var SHELL = ['./', './index.html', './manifest.webmanifest', './js/maze-data.js', './js/game.js'];
 

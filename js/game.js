@@ -485,8 +485,9 @@
     var others = [];
     for (var z = 0; z < zc; z++) if (z !== startZone) others.push(z);
     var plan = [];
+    var reserveStart = (n <= 2) ? 1 : 0; // 2-letter words keep one letter at home
     // first guarantee one letter in every other zone (forces each barrier to be crossed)
-    for (var i = 0; i < others.length && plan.length < n; i++) plan.push(others[i]);
+    for (var i = 0; i < others.length && plan.length < n - reserveStart; i++) plan.push(others[i]);
     while (plan.length < n) {
       plan.push(wordIndex < 2 ? startZone : pick([startZone].concat(others)));
     }
@@ -626,6 +627,19 @@
 
   function freezePlayer(s) { freezeT = Math.max(freezeT, s); }
 
+  /* Backspace / the ↺ button: send the pac-man back to the start of the maze.
+     Collected letters are kept — it is a shortcut, not a penalty. */
+  function returnToStart() {
+    if (phase !== 'playing') return;
+    dirOrder = []; dirHeld = {};
+    if (typeof swipeDir !== 'undefined' && swipeDir) swipeDir = null;
+    resetPlayer();
+    player.moving = false; player.prog = 0;
+    sfxTick();
+    msg('↺ رجعت إلى بداية المتاهة', 'Back to the start of the maze', 1700);
+    syncUI();
+  }
+
   /* ================= word lifecycle ================= */
   function startWord() {
     phase = 'playing';
@@ -754,14 +768,6 @@
     dirOrder.push(name);
     if (!player.moving) tryStartMove(d);
   }
-  /* one-shot direction (swipe): replaces the current direction, is not
-     released by keyup, and keeps the pac-man gliding until a wall */
-  function nudgeDir(name) {
-    if (dirHeld[name] && dirOrder.length === 1) return;
-    dirHeld = {};
-    dirOrder = [name];
-    if (!player.moving) tryStartMove(DIR_KEYS[name]);
-  }
   function releaseDir(name) {
     if (!dirHeld[name]) return;
     dirHeld[name] = false;
@@ -777,6 +783,7 @@
       checkWithSheikh();
     }
     if (e.key === 'r' || e.key === 'R') { e.preventDefault(); reciteWord(word, {}); }
+    if (e.key === 'Backspace' || e.key === 'Delete') { e.preventDefault(); returnToStart(); }
   });
   window.addEventListener('keyup', function (e) {
     var dir = KEYMAP[e.key];
@@ -787,12 +794,16 @@
   });
 
   // ---- pointer / swipe on the canvas ----
-  var touchOrigin = null, swiping = false;
+  /* Touch steering works like a little joystick: the pac-man follows the
+     direction you drag while your finger is down and STOPS when you lift it
+     (a sticky direction used to stay locked on one side). */
+  var touchOrigin = null, swiping = false, swipeDir = null;
   function canvasPoint(e) {
     var rect = cv.getBoundingClientRect();
     return { x: e.clientX - rect.left, y: e.clientY - rect.top };
   }
   cv.addEventListener('pointerdown', function (e) {
+    if (swipeDir) { releaseDir(swipeDir); swipeDir = null; }
     touchOrigin = canvasPoint(e);
     swiping = false;
     cv.setPointerCapture && cv.setPointerCapture(e.pointerId);
@@ -805,7 +816,11 @@
     if (swiping) {
       if (Math.abs(dx) > 16 || Math.abs(dy) > 16) {
         var name = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up');
-        nudgeDir(name);
+        if (swipeDir !== name) {
+          if (swipeDir) releaseDir(swipeDir);
+          pressDir(name);
+          swipeDir = name;
+        }
         touchOrigin = { x: touchOrigin.x + dx, y: touchOrigin.y + dy };
       }
     }
@@ -816,10 +831,14 @@
       var tr = Math.floor(touchOrigin.y / TILE), tc = Math.floor(touchOrigin.x / TILE);
       if (Math.abs(tr - sheikh.r) <= 1 && Math.abs(tc - sheikh.c) <= 1) checkWithSheikh();
     }
+    if (swipeDir) { releaseDir(swipeDir); swipeDir = null; } // finger up -> stop
     touchOrigin = null; swiping = false;
   }
   cv.addEventListener('pointerup', endSwipe);
-  cv.addEventListener('pointercancel', function () { touchOrigin = null; swiping = false; });
+  cv.addEventListener('pointercancel', function () {
+    if (swipeDir) { releaseDir(swipeDir); swipeDir = null; }
+    touchOrigin = null; swiping = false;
+  });
 
   // on-screen d-pad
   var padBtns = document.querySelectorAll('.padBtn');
@@ -848,6 +867,7 @@
     cv.focus && cv.focus();
   }
   var forcedStartIndex;
+  var autoTestCount = Infinity;
   $('btnStart').addEventListener('click', startGame);
   $('btnAgain').addEventListener('click', function () {
     ensureAudio();
@@ -866,6 +886,7 @@
   });
   onAll('.js-check', 'click', function () { checkWithSheikh(); });
   onAll('.js-drop', 'click', function () { dropLetterAt(tray.length - 1); });
+  onAll('.js-reset', 'click', function () { returnToStart(); });
   onAll('.js-fs', 'click', toggleFullscreen);
   $('btnSound').addEventListener('click', function () {
     soundOn = !soundOn;
@@ -1454,6 +1475,12 @@
         var zc = maze.meta.hazardRows.length + 1;
         barrierCrossing();
         lettersReachable();
+        // Backspace / the ↺ button must return the pac-man to the start tile
+        player.r = 1; player.c = 1; player.moving = false; player.prog = 0;
+        returnToStart();
+        if (player.r !== maze.meta.player.r || player.c !== maze.meta.player.c) {
+          failures.push('reset did not return to the start tile');
+        }
         var zonesPlaced = zonesUsedByLetters();
         if (zonesPlaced < Math.min(zc, target.length)) {
           failures.push('letters only in ' + zonesPlaced + ' of ' + zc + ' zones');
@@ -1514,13 +1541,14 @@
         });
       });
     }
+    var limit = Math.min(totalWords, autoTestCount);
     var cur = 0;
     (function next() {
-      if (cur >= totalWords) {
+      if (cur >= limit) {
         after(500, function () {
-          if ($('end').classList.contains('hidden')) failures.push('end screen not shown');
-          if (marks !== totalWords) failures.push('marks expected ' + totalWords + ' got ' + marks);
-          if (correctN !== totalWords) failures.push('correctN expected ' + totalWords + ' got ' + correctN);
+          if (limit === totalWords && $('end').classList.contains('hidden')) failures.push('end screen not shown');
+          if (marks !== limit) failures.push('marks expected ' + limit + ' got ' + marks);
+          if (correctN !== limit) failures.push('correctN expected ' + limit + ' got ' + correctN);
           console.log('AUTOTEST RESULT ' + (failures.length ? 'FAIL [' + failures.join(', ') + ']' : 'PASS') +
                       ' mode=all marks=' + marks + ' correct=' + correctN + ' wrong=' + wrongN);
         });
@@ -1589,6 +1617,8 @@
     // an end-to-end logic test and prints AUTOTEST RESULT to the console
     try {
       var qs = new URLSearchParams(location.search);
+      var cnt = qs.get('count');
+      if (cnt !== null) autoTestCount = Math.max(1, parseInt(cnt, 10) || 12);
       var mz = qs.get('maze');
       if (mz === 'wide' || mz === 'tall') { mazeOverride = mz; loadMaze(mz); }
       var want = qs.get('word');

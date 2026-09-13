@@ -9,3 +9,6 @@ Thumbs.db
 
 # local push key (never commit)
 .git-ssh/
+
+# generated word-build cache
+.cache/
