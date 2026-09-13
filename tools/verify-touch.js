@@ -74,6 +74,31 @@ async function main() {
     console.log(`   controls: arrows ${info.barVisible ? 'yes' : 'no'} (${info.barW}x${info.barH}), actions ${info.actsVisible ? 'yes' : 'no'} · letter zones=${info.zones}`);
     check(info.maze === phone.wantMaze, 'maze auto-selected for orientation', info.maze);
     check(info.barVisible && info.actsVisible, 'touch controls visible');
+
+    // the score must live outside the maze, and the header must stay on one line
+    const chrome = await evalJs(`(() => {
+      const chips = [...document.querySelectorAll('.chips > *')].map(el => {
+        const r = el.getBoundingClientRect();
+        return Math.round((r.top + r.bottom) / 2); // vertical centre -> same line = same centre
+      });
+      const header = document.querySelector('.top').getBoundingClientRect();
+      const cv = document.getElementById('cv').getBoundingClientRect();
+      const onCanvas = document.elementFromPoint(Math.round(cv.x + cv.width / 2), Math.round(cv.y + cv.height / 2));
+      return {
+        rows: new Set(chips.map(t => Math.round(t / 8))).size,
+        overlay: !!document.getElementById('scoreHud'),
+        canvasTop: Math.round(cv.top), headerBottom: Math.round(header.bottom),
+        topElement: onCanvas ? (onCanvas.id || onCanvas.className) : 'none',
+        headerH: Math.round(header.height),
+        chipsH: Math.round(document.querySelector('.chips').getBoundingClientRect().height),
+        score: (document.getElementById('chipMarks') || {}).textContent
+      };
+    })()`);
+    check(chrome.rows === 1, 'header (score chips) stays on one line',
+          chrome.rows + ' row(s), header ' + chrome.headerH + 'px, chips ' + chrome.chipsH + 'px');
+    check(!chrome.overlay, 'no score overlay over the maze');
+    check(chrome.topElement === 'cv', 'nothing covers the middle of the maze', 'top element: ' + chrome.topElement);
+    check(Number(chrome.canvasTop) >= Number(chrome.headerBottom) - 1, 'maze sits below the header');
     check(info.hPct >= 60, 'maze is big on the phone', info.hPct + '% of height');
     const expectZones = Math.min(3, info.letters);
     check(info.zones.split(',').length === expectZones,

@@ -42,7 +42,7 @@
   }
   /* bump on every release — shown in the UI and compared with version.json so
      a stale cached build can be spotted (and reloaded) at a glance */
-  var BUILD = '2026-09-13.7';
+  var BUILD = '2026-09-13.8';
 
   var AR_FONT = '"Amiri","Geeza Pro","Noto Naskh Arabic","Traditional Arabic","Scheherazade New","Segoe UI",Tahoma,sans-serif';
   var EN_FONT = '"Segoe UI",Tahoma,Arial,sans-serif';
@@ -424,10 +424,9 @@
     chip('🧯', 'extinguisher', held.fire);
     renderTray();
     // check button availability
-    // score HUD over the maze + the scoreboard in the panel
-    setText('hudScore', String(marks));
-    setText('hudCorrect', '\u2705 ' + correctN);
-    setText('hudWrong', '\u274C ' + wrongN);
+    // score in the header chips (never over the maze) + the panel scoreboard
+    setText('chipCorrect', '\u2705 ' + correctN);
+    setText('chipWrong', '\u274C ' + wrongN);
     setText('statScore', String(marks));
     setText('statCorrect', String(correctN));
     setText('statWrong', String(wrongN));
@@ -1670,7 +1669,7 @@
                 if (card.textContent.indexOf(checkedWord.meaning) === -1) failures.push('meaning card missing the meaning');
                 if (card.textContent.indexOf(checkedWord.translit) === -1) failures.push('meaning card missing the transliteration');
               }
-              var hud = document.getElementById('hudScore');
+              var hud = document.getElementById('chipMarks');
               if (!hud || hud.textContent !== String(marks)) {
                 failures.push('score HUD out of sync: ' + (hud && hud.textContent) + ' vs ' + marks);
               }
@@ -1695,7 +1694,7 @@
             }
             if (testMovementFailure) failures.push(testMovementFailure);
             if (mode === 'wrong') {
-              var hudW = document.getElementById('hudScore');
+              var hudW = document.getElementById('chipMarks');
               if (!hudW || hudW.textContent !== String(marks)) failures.push('score HUD wrong after a wrong answer');
             }
             console.log('AUTOTEST RESULT ' + (failures.length ? 'FAIL [' + failures.join(', ') + ']' : 'PASS') +
@@ -1868,7 +1867,7 @@
               cardVisible: !!(document.getElementById('wordCard') && document.getElementById('wordCard').classList.contains('show')),
               order: runOrder.slice(0, 8).map(function (i) { return WORDS[i].id; }),
               marks: marks, correct: correctN, wrong: wrongN, best: bestScore,
-              hud: (document.getElementById('hudScore') || {}).textContent || null,
+              hud: (document.getElementById('chipMarks') || {}).textContent || null,
               tray: tray.slice(),
               held: { boat: held.boat, fire: held.fire },
               letters: letters.map(function (l) { return { g: l.glyph, r: l.r, c: l.c, taken: l.taken, zone: zoneOf(l.r) }; })

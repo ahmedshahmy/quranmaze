@@ -27,9 +27,10 @@ them to the sheikh for checking.
    **Wrong order → −1 mark**, you redo the same word, and the sheikh
    **scatters the letters to new positions**.
 
-**Score:** correct order **+1**, wrong order **−1**. The score is always visible
-(a HUD over the maze plus a scoreboard in the panel with **Score, Correct, Wrong
-and Best**); a `+1` / `−1` floats up over the maze on each check, and your best
+**Score:** correct order **+1**, wrong order **−1**. The score lives **outside
+the maze** — in the header chips (`⭐ score`, `✅ correct`, `❌ wrong`) and in the
+panel scoreboard (Score / Correct / Wrong / **Best**) — so the maze is never
+covered. A short `+1` / `−1` floats over the maze on each check, and your best
 result is remembered on the device.
 
 Helpers: click any letter in the "Collected" tray to put it back in the maze and
