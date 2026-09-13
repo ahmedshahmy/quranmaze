@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Quran Maze">
-<title>Quran Letter Maze — متاهة حروف القرآن</title>
+<title>Quran Letter Maze — متاهة حروف القرآن · by Ahamed Shahmy</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 <link rel="icon" href="icons/icon-192.png">
@@ -52,6 +52,15 @@
   }
   .logo { font-size: 18px; font-weight: 800; letter-spacing: .3px; }
   .logo .sub { display: block; font-size: 10.5px; font-weight: 500; opacity: .75; }
+  .byline {
+    font-size: 12px; font-weight: 700; color: var(--accent);
+    opacity: .9; margin-left: 6px; white-space: nowrap;
+  }
+  .bylineMenu {
+    margin: 2px 0 6px; font-size: 14px; font-weight: 700; color: var(--accent); opacity: .95;
+  }
+  .credit { text-align: center; font-size: 11px; opacity: .6; padding-top: 4px; }
+  .credit b, .buildLine b { color: var(--accent); font-weight: 700; }
   .chips { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
   .chip {
     background: var(--panel); border: 1px solid #2b3a75; border-radius: 999px;
@@ -355,6 +364,7 @@
 
 <header class="top">
   <div class="logo">🕌 Quran Letter Maze
+    <span class="byline">by Ahamed Shahmy</span>
     <span class="sub" lang="ar" dir="rtl">متاهة حروف القرآن — اجمع الحروف بالترتيب</span>
   </div>
   <div class="chips">
@@ -433,10 +443,12 @@
       <span class="sw sfire"></span> Fire — cross with <b>🧯 extinguishers</b>.<br>
       Letters are hidden in the top, middle and bottom areas, so you need both items.
     </div>
+    <div class="credit">by <b>Ahamed Shahmy</b></div>
+
     <div class="keys">
       <kbd>←↑↓→</kbd>/<kbd>WASD</kbd> or swipe/d-pad · <kbd>Space</kbd> check ·
-      <kbd>R</kbd> replay word · <kbd>Backspace</kbd> or the ↺ <b>reset</b> button
-      returns you to the start · tap a collected letter to put it back.
+      <kbd>R</kbd> replay word · <kbd>Backspace</kbd> or ↺ restarts the round
+      (start tile + letters returned) · tap a collected letter to put it back.
     </div>
   </aside>
 </main>
@@ -455,6 +467,7 @@
   <div class="card">
     <p class="arTitle" lang="ar" dir="rtl">🕌 متاهة حروف القرآن</p>
     <h1>Quran Letter Maze</h1>
+    <p class="bylineMenu">by Ahamed Shahmy</p>
     <ul class="rules">
       <li class="ar" lang="ar" dir="rtl">1️⃣ استمع جيدًا للكلمة — تُقرأ لك ولا تُعرض على الشاشة.</li>
       <li>1️⃣ Listen — the word is <b>recited, never shown</b> (real Qur'an recitation).
@@ -466,8 +479,9 @@
       <li class="ar" lang="ar" dir="rtl">4️⃣ بعد جمع كل الحروف، اذهب إلى الشيخ 🤲 ليُصحّح ترتيبك.</li>
       <li>4️⃣ With all letters collected, go to the <b>sheikh 🤲</b>: correct = <b>+1</b> and the
         next word · wrong = <b>−1</b> and he scatters the letters again.</li>
-      <li>↺ <b>Lost in the maze?</b> Press <b>Backspace</b> or the <b>↺ reset</b> button
-        (under the maze on phones) to jump back to the start — your collected letters are kept.</li>
+      <li>↺ <b>Restart the round:</b> press <b>Backspace</b> or the <b>↺ reset</b> button
+        (under the maze on phones) — you go back to the start tile and every collected
+        letter returns to where it was, so you can collect them again in the right order.</li>
       <li>⭐ <b>Score:</b> correct order = <b>+1</b>, wrong order = <b>−1</b>; the score,
         correct/wrong counts and your best result are always on screen.</li>
       <li>📱 <b>On a phone:</b> use the D-pad under the maze, or drag on the maze like a joystick
@@ -486,6 +500,7 @@
     <div id="endStats"></div>
     <div class="scrollList" id="endList"></div>
     <button class="btn big" id="btnAgain" style="width:100%;">🔄 <span lang="ar" dir="rtl">العب مرة أخرى</span> — Play again</button>
+    <p class="buildLine">Quran Letter Maze — by <b>Ahamed Shahmy</b></p>
   </div>
 </div>
 

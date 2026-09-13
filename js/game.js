@@ -42,7 +42,7 @@
   }
   /* bump on every release — shown in the UI and compared with version.json so
      a stale cached build can be spotted (and reloaded) at a glance */
-  var BUILD = '2026-09-13.8';
+  var BUILD = '2026-09-13.9';
 
   var AR_FONT = '"Amiri","Geeza Pro","Noto Naskh Arabic","Traditional Arabic","Scheherazade New","Segoe UI",Tahoma,sans-serif';
   var EN_FONT = '"Segoe UI",Tahoma,Arial,sans-serif';
@@ -625,6 +625,8 @@
     return all.length ? pick(all) : { r: player.r, c: player.c };
   }
 
+  var initialLetters = []; // layout at the start of the round (for the reset button)
+
   function placeLetters(wordObj) {
     letters = [];
     var used = occupiedKeys(); // tokens + player + sheikh
@@ -634,6 +636,8 @@
       used.add(spot.r + ',' + spot.c);
       letters.push({ glyph: wordObj.letters[i], r: spot.r, c: spot.c, taken: false });
     }
+    // remember this layout so the reset button can put the round back as it was
+    initialLetters = letters.map(function (l) { return { glyph: l.glyph, r: l.r, c: l.c }; });
   }
 
   function pickUpLettersAt(r, c) {
@@ -745,16 +749,30 @@
 
   function freezePlayer(s) { freezeT = Math.max(freezeT, s); }
 
-  /* Backspace / the ↺ button: send the pac-man back to the start of the maze.
-     Collected letters are kept — it is a shortcut, not a penalty. */
+  /* Backspace / the ↺ button: restart the round — pac-man goes back to the
+     start tile and every collected letter returns to where it was. It is a
+     shortcut, not a penalty (the score is untouched). */
   function returnToStart() {
     if (phase !== 'playing') return;
     dirOrder = []; dirHeld = {};
     if (typeof swipeDir !== 'undefined' && swipeDir) swipeDir = null;
+    var returned = tray.length;
+    tray = [];
+    if (initialLetters.length) {
+      letters = initialLetters.map(function (l) {
+        return { glyph: l.glyph, r: l.r, c: l.c, taken: false };
+      });
+    }
     resetPlayer();
     player.moving = false; player.prog = 0;
+    hideWordCard();
     sfxTick();
-    msg('↺ رجعت إلى بداية المتاهة', 'Back to the start of the maze', 1700);
+    if (returned) {
+      msg('↺ رجعت إلى البداية وأُعيدت الحروف إلى المتاهة',
+          'Back to the start — ' + returned + ' letter(s) put back in the maze', 2100);
+    } else {
+      msg('↺ رجعت إلى بداية المتاهة', 'Back to the start of the maze', 1700);
+    }
     syncUI();
   }
 
@@ -1634,12 +1652,15 @@
         var zc = maze.meta.hazardRows.length + 1;
         barrierCrossing();
         lettersReachable();
-        // Backspace / the ↺ button must return the pac-man to the start tile
+        // Backspace / the ↺ button restarts the round: start tile + letters back
         player.r = 1; player.c = 1; player.moving = false; player.prog = 0;
+        if (letters.length) { letters[0].taken = true; tray = [letters[0].glyph]; }
         returnToStart();
         if (player.r !== maze.meta.player.r || player.c !== maze.meta.player.c) {
           failures.push('reset did not return to the start tile');
         }
+        if (tray.length !== 0) failures.push('reset did not clear the collected letters');
+        if (letters.some(function (l) { return l.taken; })) failures.push('reset did not put the letters back in the maze');
         var zonesPlaced = zonesUsedByLetters();
         if (zonesPlaced < Math.min(zc, target.length)) {
           failures.push('letters only in ' + zonesPlaced + ' of ' + zc + ' zones');

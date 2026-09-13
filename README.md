@@ -1,5 +1,7 @@
 # 🕌 Quran Letter Maze — متاهة حروف القرآن
 
+**by Ahamed Shahmy** · [play it online](https://ahmedshahmy.github.io/quranmaze/)
+
 A Pac-Man style **listening & spelling** game for the web.
 The player **hears** a word from the Qur'an (it is recited — **never displayed**),
 then collects its Arabic letters through a maze **in the right order** and brings
@@ -33,9 +35,10 @@ panel scoreboard (Score / Correct / Wrong / **Best**) — so the maze is never
 covered. A short `+1` / `−1` floats over the maze on each check, and your best
 result is remembered on the device.
 
-Helpers: click any letter in the "Collected" tray to put it back in the maze and
-re-arrange your order without a penalty, and press **Backspace** or the **↺ reset**
-button to jump back to the start tile.
+Helpers: click any letter in the "Collected" tray to put it back in the maze, or
+press **Backspace** / the **↺ reset** button to restart the round — you return to
+the start tile and **every collected letter goes back** to where it was, so you
+can collect them again in the right order (your score is untouched).
 
 ## Sound: real Qur'an recitation (bundled)
 

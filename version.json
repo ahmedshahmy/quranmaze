@@ -1,5 +1,5 @@
 {
-  "build": "2026-09-13.8",
+  "build": "2026-09-13.9",
   "words": 73,
   "letters": 228,
   "mazes": [
@@ -8,5 +8,6 @@
     "phone 17x29",
     "phoneS 17x23"
   ],
-  "notes": "score moved out of the maze into the header (nothing covers the maze)"
+  "notes": "reset restarts the round (letters returned); credited to Ahamed Shahmy",
+  "author": "Ahamed Shahmy"
 }
