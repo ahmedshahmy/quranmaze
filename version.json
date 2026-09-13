@@ -1,7 +1,12 @@
 {
-  "build": "2026-09-13.5",
+  "build": "2026-09-13.6",
   "words": 73,
   "letters": 228,
-  "mazes": ["wide 27x23", "tall 19x31", "phone 17x29", "phoneS 17x23"],
-  "notes": "random word order, phone mazes, Backspace reset, joystick steering"
+  "mazes": [
+    "wide 27x23",
+    "tall 19x31",
+    "phone 17x29",
+    "phoneS 17x23"
+  ],
+  "notes": "word + meaning card after each correct answer"
 }

@@ -42,7 +42,7 @@
   }
   /* bump on every release — shown in the UI and compared with version.json so
      a stale cached build can be spotted (and reloaded) at a glance */
-  var BUILD = '2026-09-13.5';
+  var BUILD = '2026-09-13.6';
 
   var AR_FONT = '"Amiri","Geeza Pro","Noto Naskh Arabic","Traditional Arabic","Scheherazade New","Segoe UI",Tahoma,sans-serif';
   var EN_FONT = '"Segoe UI",Tahoma,Arial,sans-serif';
