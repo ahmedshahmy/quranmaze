@@ -86,20 +86,51 @@ python3 -m http.server 8137 --bind 0.0.0.0
 
 ## Host it
 
-* **On this network / on your phone:** `./tools/serve.sh` — open the printed
-  `http://<your-ip>:8137` on the phone (same Wi-Fi).
-* **On GitHub Pages (public URL):** the repo ships
-  `.github/workflows/pages.yml`, which validates the mazes and deploys the whole
-  folder on every push to `main`.
-  1. create an empty GitHub repo, then
-     `git remote add origin git@github.com:<you>/quran-letter-maze.git`
-     and `git push -u origin main`
-  2. in the repo: **Settings → Pages → Source: GitHub Actions**
-  3. the game appears at `https://<you>.github.io/quran-letter-maze/`
+### On this network / on your phone (works right now)
+
+```bash
+./tools/serve.sh          # serves on 0.0.0.0:8137 and prints the phone URL
+```
+Open the printed `http://<your-ip>:8137` on the phone (same Wi-Fi), then
+*Add to Home screen* for an offline-capable app icon.
+
+### On GitHub Pages (public URL)
+
+The repo ships `.github/workflows/pages.yml`, which validates the mazes and
+deploys the whole folder on every push to `main`. Once, in the repo:
+**Settings → Pages → Build and deployment → Source: GitHub Actions**.
+
+`./tools/publish.sh` commits everything and pushes. It is safe to re-run: it
+adds the remote only if it is missing, and updates it with
+`set-url` otherwise — so you will never hit *"remote origin already exists"*
+(if you do, just skip `git remote add` and run the push).
+
+```bash
+./tools/publish.sh                                     # commit + push
+./tools/publish.sh "message" git@github.com:me/r.git   # set/replace origin first
+```
+
+**Authentication.** Pushing needs this machine to be authorized on GitHub. Two
+options:
+
+1. **Deploy key from this workspace** (used automatically by `publish.sh`, kept
+   in the gitignored `.git-ssh/` folder because `~/.ssh` is not writable here):
+   ```bash
+   cat .git-ssh/id_ed25519.pub       # copy this line
+   ```
+   GitHub → your repo → **Settings → Deploy keys → Add deploy key** → paste →
+   tick **Allow write access** → Add. Then run `./tools/publish.sh` again.
+   (You can delete the deploy key again at any time.)
+2. **HTTPS with a Personal Access Token**:
+   ```bash
+   git remote set-url origin https://github.com/<user>/<repo>.git
+   # prompts: username = your GitHub user
+   #          password = a token with "repo" scope
+   #          (create at https://github.com/settings/tokens)
+   ```
+
 * **Other free static hosts** (Netlify Drop, Cloudflare Pages, Vercel) also work:
-  just upload the folder — it is plain static files.
-* `./tools/publish.sh "message"` commits everything and pushes if a remote is
-  configured.
+  just upload the folder — it is plain static files, no build step.
 
 ### Screen & controls
 
