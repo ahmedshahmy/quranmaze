@@ -9,7 +9,7 @@
    Bump CACHE when you want to force a full refresh of cached media. */
 'use strict';
 
-var CACHE = 'quran-maze-v4';
+var CACHE = 'quran-maze-v5';
 var MEDIA = [
   './icons/icon-192.png',
   './icons/icon-512.png',
@@ -64,9 +64,13 @@ self.addEventListener('fetch', function (e) {
       caches.match(req, { ignoreSearch: true }).then(function (hit) {
         if (hit) return hit;
         return fetch(req).then(function (res) {
-          if (res && res.ok) {
-            var copy = res.clone();
-            caches.open(CACHE).then(function (c) { c.put(req, copy); }).catch(function () {});
+          // Only full responses (200) may be cached: GitHub Pages answers media
+          // range requests with 206, and Cache.put() rejects those.
+          if (res && res.status === 200 && !res.headers.get('content-range')) {
+            try {
+              var copy = res.clone();
+              caches.open(CACHE).then(function (c) { return c.put(req, copy); }).catch(function () {});
+            } catch (e) { /* ignore */ }
           }
           return res;
         });
@@ -78,9 +82,11 @@ self.addEventListener('fetch', function (e) {
   // network first for code/HTML, offline fallback to the cache
   e.respondWith(
     fetch(req).then(function (res) {
-      if (res && res.ok) {
-        var copy = res.clone();
-        caches.open(CACHE).then(function (c) { c.put(req, copy); }).catch(function () {});
+      if (res && res.status === 200) {
+        try {
+          var copy = res.clone();
+          caches.open(CACHE).then(function (c) { return c.put(req, copy); }).catch(function () {});
+        } catch (e) { /* ignore */ }
       }
       return res;
     }).catch(function () {
