@@ -22,7 +22,8 @@ them to the sheikh for checking.
    heard it.
 5. With all letters collected, go to the **sheikh 🤲** (walk next to him, then
    **Space/E**, tap him, or press **🤲 تحقق**).
-6. **Correct order → +1 mark** and the next word starts.
+6. **Correct order → +1 mark**, a card appears with the word **and what it
+   means** (`shams — sun`) plus the verse it comes from, and the next word starts.
    **Wrong order → −1 mark**, you redo the same word, and the sheikh
    **scatters the letters to new positions**.
 
@@ -89,8 +90,12 @@ for all 73 ids.
 | 11 | ش ف ا ء | شِفَاء | healing | 16:69 |
 | 12 | ر ح م ة | رَحْمَة | mercy | 10:57 |
 
-Words and verse text appear only on the **end-of-round recap**, after the child
-has already spelled each word.
+The word and its meaning are revealed **only after the child spells it
+correctly** (and in the end-of-round recap) — never before, so the listening
+task stays intact. The displayed form is the plain dictionary form: the
+Qur'anic prefix and accusative tanween are trimmed
+(`tools/verify-words.js` checks that the shown word matches the collected
+letters for all 73 words).
 
 ## Run it
 

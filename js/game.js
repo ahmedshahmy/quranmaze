@@ -318,6 +318,76 @@
     bannerHideT = setTimeout(function () { banner.classList.remove('show'); }, ms || 2600);
   }
   function after(ms, fn) { var t = setTimeout(fn, ms); timers.push(t); return t; }
+
+  var DIACRITIC = /[\u0610-\u061A\u064B-\u065F\u0670\u06D6-\u06ED\u0640]/;
+
+  /* The word as it stands alone, without the Qur'anic prefix (وَ/فَ/بِ/لِ/ٱل…):
+     finds where the target letters start inside the recited form and keeps the
+     rest with its vowel marks, e.g. وَٱلشَّمْسِ -> شَّمْسِ */
+  function bareRecite(w) {
+    var t = (w.recite || w.letters.join('')).replace(/\u0671/g, '\u0627');
+    for (var start = 0; start < t.length; start++) {
+      var i = start, ok = true;
+      for (var li = 0; li < w.letters.length; li++) {
+        var want = w.letters[li];
+        if (want === '\u0623' || want === '\u0622' || want === '\u0625') want = '\u0627';
+        while (i < t.length && DIACRITIC.test(t.charAt(i))) i++;
+        if (i >= t.length || t.charAt(i) !== want) { ok = false; break; }
+        i++;
+      }
+      if (ok) return tidyShown(t.slice(start), w);
+    }
+    return w.letters.join('');
+  }
+
+  /* Turn the recited form into the plain dictionary form for display:
+     drop trailing pause marks/spaces, the accusative tanween and its alif
+     (صَبْرًا -> صَبْر) and a leading shadda left over from a prefix
+     (وَمَّطَرًا -> مَطَر). */
+  function skeletonOf(t) {
+    return t.replace(/[\u0670\u0671\u0622]/g, '\u0627')
+            .replace(/[\u0610-\u061A\u064B-\u065F\u06D6-\u06ED\u0640]/g, '')
+            .replace(/[^\u0621-\u064A]/g, '');
+  }
+
+  /* Turn the recited form into the plain dictionary form for display:
+     drop recitation marks (iqlab/waqf), the accusative tanween and its alif
+     (صَبْرۭا -> صَبْر) and a leading shadda left over from a prefix. */
+  function tidyShown(t, w) {
+    var s = t
+      .replace(/[\u06D6-\u06ED\u0610-\u061A\u0600-\u0605]/g, '')
+      .replace(/[\u0671\u0622\u0623\u0625]/g, '\u0627') // alef wasla / madda / hamza forms
+      .replace(/^\s+|\s+$/g, '');
+    var letters = w.letters.join('');
+    if (skeletonOf(s) === letters + '\u0627') {          // tanween alif is not part of the word
+      // ... take the alif off, allowing vowels/marks written after it (e.g. ا + madda)
+      s = s.replace(/[\u064E\u064F\u0650]?[\u0627\u0622][\u064B-\u0655\u0670]*$/, '');
+    }
+    s = s.replace(/[\u064B\u064C\u064D]/g, '');          // no tanween in a dictionary form
+    s = s.replace(/^([\u0621-\u064A])\u0651/, '$1');     // leading shadda left from a prefix
+    return s.replace(/\s+$/g, '');
+  }
+
+  /* the reward card shown after a word is accepted: the word + its meaning */
+  function showWordCard(w) {
+    var card = document.getElementById('wordCard');
+    if (!card) return;
+    var word = card.querySelector('.wcWord');
+    var meta = card.querySelector('.wcMeta');
+    var ref = card.querySelector('.wcRef');
+    if (word) word.textContent = bareRecite(w);
+    if (meta) meta.innerHTML = '<b>' + w.translit + '</b> <span class="m">— ' + w.meaning + '</span>';
+    if (ref) ref.textContent = w.ref || '';
+    card.classList.add('show');
+    if (wordCardTimer) clearTimeout(wordCardTimer);
+    wordCardTimer = setTimeout(hideWordCard, 4200);
+  }
+  function hideWordCard() {
+    var card = document.getElementById('wordCard');
+    if (card) card.classList.remove('show');
+    if (wordCardTimer) { clearTimeout(wordCardTimer); wordCardTimer = null; }
+  }
+  var wordCardTimer = null;
   function clearTimers() { timers.forEach(clearTimeout); timers = []; }
 
   function syncUI() {
@@ -617,6 +687,7 @@
       syncUI();
       sfxCorrect();
       freezePlayer(0.6);
+      showWordCard(word); // the word + what it means
       bannerShow('أحسنت! +١ نقطة — أتقنت الكلمة', 'Well done! +1 mark — you spelled it perfectly', 'ok', 3000);
       Speech.speak('أحسنت! ما شاء الله، أتقنت الكلمة');
       after(900, function () { reciteWord(word, {}); });
@@ -635,6 +706,7 @@
   }
   function reshuffleLetters() {
     // redo the same word: letters go back to the maze at NEW positions
+    hideWordCard();
     tray = [];
     placeLetters(word);
     syncUI();
@@ -659,6 +731,7 @@
   /* ================= word lifecycle ================= */
   function startWord() {
     phase = 'playing';
+    hideWordCard();
     word = currentWord();
     tray = [];
     resetPlayer();
@@ -949,8 +1022,9 @@
     (wordsPlayed.length ? wordsPlayed : WORDS).forEach(function (w) {
       var li = document.createElement('div');
       li.className = 'endWord';
-      li.innerHTML = '<div class="ewL">' + w.letters.join('  ') + '</div>' +
-                     '<div class="ewR"><b>' + w.translit + '</b> · ' + w.meaning + '<br><span>' + w.ref + '</span></div>';
+      li.innerHTML = '<div class="ewL">' + bareRecite(w) + '</div>' +
+                     '<div class="ewR"><b>' + w.translit + '</b> — <b>' + w.meaning + '</b>' +
+                     '<br><span>' + w.letters.join(' ') + ' · ' + w.ref + '</span></div>';
       list.appendChild(li);
     });
     $('endTitle').textContent = '🎉 أحسنت! أتممت ' + totalWords + ' كلمات';
@@ -1553,8 +1627,20 @@
           for (var i = 0; i < target.length; i++) if (tray[i] !== walkGlyphs[i]) trayOk = false;
           if (!trayOk) failures.push('tray after walking: ' + tray.join('') + ' expected ' + walkGlyphs.join(''));
           if (!playerNearSheikh()) failures.push('player should end next to the sheikh');
+          var checkedWord = currentWord();
           testAdvance(5);
           checkWithSheikh();
+          if (mode !== 'wrong') {
+            after(700, function () {
+              var card = document.getElementById('wordCard');
+              if (!card || !card.classList.contains('show')) {
+                failures.push('meaning card did not appear after a correct answer');
+              } else {
+                if (card.textContent.indexOf(checkedWord.meaning) === -1) failures.push('meaning card missing the meaning');
+                if (card.textContent.indexOf(checkedWord.translit) === -1) failures.push('meaning card missing the transliteration');
+              }
+            });
+          }
           after(3800, function () {
             if (mode === 'wrong') {
               if (marks !== marksBefore - 1) failures.push('wrong check should be -1 mark');
@@ -1711,6 +1797,16 @@
         window.__qp = {
           pos: function () { return { r: player.r, c: player.c, moving: player.moving, dir: dirOrder.slice() }; },
           sheikh: function () { return { r: sheikh.r, c: sheikh.c }; },
+          /* dev helper: render the reward card for a word (by id) and report it */
+          previewCard: function (idOrIndex) {
+            var w = null;
+            if (typeof idOrIndex === 'number') w = WORDS[idOrIndex];
+            else for (var i = 0; i < WORDS.length; i++) if (WORDS[i].id === idOrIndex) w = WORDS[i];
+            if (!w) w = currentWord();
+            showWordCard(w);
+            return { id: w.id, shown: bareRecite(w), letters: w.letters.join(''), translit: w.translit, meaning: w.meaning };
+          },
+          hideCard: function () { hideWordCard(); },
           open: function () {
             var k = function (r, c) { return kindAt(r, c); };
             return {
@@ -1723,6 +1819,8 @@
               maze: maze.id, cols: C, rows: R, tile: TILE, phase: phase,
               word: wordIndex, total: runOrder.length,
               wordId: (word && word.id) || null,
+              meaning: (word && word.meaning) || null,
+              cardVisible: !!(document.getElementById('wordCard') && document.getElementById('wordCard').classList.contains('show')),
               order: runOrder.slice(0, 8).map(function (i) { return WORDS[i].id; }),
               marks: marks, tray: tray.slice(),
               held: { boat: held.boat, fire: held.fire },

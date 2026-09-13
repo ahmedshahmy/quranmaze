@@ -92,6 +92,30 @@
   #banner.bad #bannerAr { color: var(--bad); }
   #bannerEn { font-size: 10.5px; opacity: .85; margin-top: 2px; }
 
+  #wordCard {
+    position: absolute; left: 50%; top: 42%; transform: translate(-50%, -50%) scale(.9);
+    width: min(84%, 420px); z-index: 7; pointer-events: none;
+    background: linear-gradient(170deg, rgba(27,37,82,.97), rgba(16,24,58,.97));
+    border: 2px solid var(--accent); border-radius: 18px;
+    padding: 14px 16px; text-align: center;
+    box-shadow: 0 20px 60px rgba(0,0,0,.6);
+    opacity: 0; transition: opacity .25s ease, transform .25s ease;
+  }
+  #wordCard.show { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  .wcTop { font-size: 12px; font-weight: 700; color: var(--ok); letter-spacing: .5px; }
+  .wcWord {
+    font-size: 46px; font-weight: 700; color: var(--accent); line-height: 1.25;
+    margin: 4px 0 2px;
+  }
+  .wcMeta { font-size: 17px; font-weight: 700; }
+  .wcMeta .m { color: #cfe6ff; font-weight: 500; }
+  .wcRef { font-size: 12px; opacity: .8; margin-top: 6px; line-height: 1.5; }
+  @media (pointer: coarse) {
+    .wcWord { font-size: 40px; }
+    .wcMeta { font-size: 15px; }
+    .wcRef { font-size: 11px; }
+  }
+
   #msgbar {
     position: absolute; left: 4%; right: 4%; bottom: 6px;
     background: rgba(20, 27, 61, .95); border: 1px solid #3b4a8c;
@@ -314,6 +338,13 @@
       <canvas id="cv"></canvas>
       <div id="banner"><div id="bannerAr"></div><div id="bannerEn"></div></div>
       <div id="msgbar"><div id="msgAr"></div><div id="msgEn"></div></div>
+      <!-- shown when a word is spelled correctly: the word and what it means -->
+      <div id="wordCard">
+        <div class="wcTop">✓ <span lang="ar" dir="rtl">أحسنت</span></div>
+        <div class="wcWord" lang="ar" dir="rtl"></div>
+        <div class="wcMeta"></div>
+        <div class="wcRef" lang="ar" dir="rtl"></div>
+      </div>
     </div>
 
     <!-- phones: arrows under the maze — or beside it in landscape.
