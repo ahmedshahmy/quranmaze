@@ -22,11 +22,22 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
-      - name: sanity check (maze + words)
+
+      - name: sanity check (mazes + words)
         run: node tools/validate.js
+
+      # enablement: true lets this workflow turn Pages on by itself
+      # (build type "GitHub Actions"), so no manual settings change is needed.
       - uses: actions/configure-pages@v5
+        with:
+          enablement: true
+
       - uses: actions/upload-pages-artifact@v3
         with:
           path: .
+
       - id: deployment
         uses: actions/deploy-pages@v4
+
+      - name: show the published URL
+        run: echo "Published at ${{ steps.deployment.outputs.page_url }}"
