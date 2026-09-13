@@ -103,28 +103,8 @@
   #msgAr { font-size: 14.5px; font-weight: 700; line-height: 1.35; }
   #msgEn { font-size: 10px; opacity: .8; }
 
-  /* touch controls live right under the maze so they never cover it */
-  .touchBar { display: none; }
-  .dpad {
-    display: grid; gap: 5px;
-    grid-template-columns: repeat(3, 54px);
-    grid-template-rows: repeat(3, 54px);
-  }
-  .padBtn {
-    border: 1px solid rgba(255,255,255,.4); background: rgba(255,255,255,.14);
-    color: #fff; font-size: 24px; border-radius: 13px;
-    display: grid; place-items: center; cursor: pointer;
-    user-select: none; touch-action: none;
-    box-shadow: 0 4px 14px rgba(0,0,0,.35);
-  }
-  .padBtn:active { background: rgba(255,255,255,.34); transform: scale(.96); }
-  .padUp { grid-column: 2; grid-row: 1; }
-  .padDown { grid-column: 2; grid-row: 3; }
-  .padLeft { grid-column: 1; grid-row: 2; }
-  .padRight { grid-column: 3; grid-row: 2; }
-  .touchActions { display: flex; flex-direction: column; gap: 7px; flex: 1 1 auto; min-width: 118px; }
-  .touchActions .btn { min-height: 50px; font-size: 15px; }
-  .swipeHint { font-size: 10.5px; opacity: .6; text-align: center; }
+  /* phone controls: slim row above the maze + arrow row below it */
+  .actRow, .arrowRow { display: none; }
 
   .panel {
     flex: 0 0 232px; max-width: 232px;
@@ -193,27 +173,27 @@
     padding: 1px 5px; font-size: 10px; font-family: inherit;
   }
 
-  /* ---------- touch devices: D-pad under the maze (portrait) ---------- */
+  /* ---------- touch devices ---------- */
   @media (pointer: coarse) {
     body { overflow: auto; }
-    .touchBar {
-      display: flex; align-items: center; gap: 10px;
-      padding: 8px 2px 2px;
-    }
-    .dpad { grid-template-columns: repeat(3, 58px); grid-template-rows: repeat(3, 58px); }
+    /* compact header so the maze gets the vertical space */
+    .top { padding: 4px 10px; gap: 6px; }
+    .logo { display: none; }
+    .chip { padding: 4px 10px; font-size: 12px; }
+    .actRow { display: flex; gap: 6px; padding: 0 2px 6px; }
+    .actRow .btn { flex: 1 1 0; min-height: 46px; font-size: 13.5px; padding: 6px 4px; }
+    .arrowRow { display: flex; gap: 6px; padding: 6px 2px 0; }
+    .arrowRow .padBtn { flex: 1 1 0; height: 60px; font-size: 27px; }
     .trayTile { width: 52px; height: 52px; font-size: 30px; }
     .legend, .keys { font-size: 11.5px; }
-    .logo { font-size: 16px; }
-    .logo .sub { display: none; }
   }
   @media (pointer: fine) {
-    .touchActions-mobile-only { display: none; }
+    .actRow, .arrowRow { display: none; }
   }
-  /* short screens: keep the control bar compact so the maze stays big */
-  @media (pointer: coarse) and (max-height: 720px) {
-    .touchBar { gap: 8px; padding: 4px 2px 0; }
-    .dpad { grid-template-columns: repeat(3, 48px); grid-template-rows: repeat(3, 48px); }
-    .touchActions .btn { min-height: 44px; font-size: 13.5px; padding: 8px 10px; }
+  /* short phones: keep the rows compact so the maze stays big */
+  @media (pointer: coarse) and (max-height: 700px) {
+    .actRow .btn { min-height: 42px; font-size: 12.5px; }
+    .arrowRow .padBtn { height: 52px; font-size: 24px; }
   }
   /* narrow windows (and any phone in portrait): controls + panel stack under the maze */
   @media (max-width: 900px) {
@@ -229,15 +209,19 @@
     #itemChips { justify-content: center; }
     .foot { display: none; }
   }
-  /* phone held sideways: D-pad and panel move beside the maze so it stays tall */
+  /* phone held sideways: actions beside the maze, arrows as a cross beside it */
   @media (pointer: coarse) and (orientation: landscape) and (max-height: 560px) {
     body { overflow: hidden; }
     .layout { flex-wrap: nowrap; align-items: flex-start; gap: 8px; padding: 0 6px 4px; }
-    .stageCol { flex-direction: row; align-items: flex-start; gap: 8px; }
-    .touchBar { flex-direction: column; padding: 0; gap: 8px; }
-    .dpad { grid-template-columns: repeat(3, 46px); grid-template-rows: repeat(3, 46px); }
-    .touchActions { min-width: 104px; }
-    .touchActions .btn { min-height: 42px; font-size: 13px; padding: 8px 10px; }
+    .stageCol { flex-direction: row; align-items: center; gap: 8px; }
+    .actRow { flex-direction: column; width: 104px; padding: 0; }
+    .actRow .btn { min-height: 42px; font-size: 13px; }
+    .arrowRow {
+      display: grid; padding: 0; gap: 4px;
+      grid-template-columns: repeat(3, 46px);
+      grid-template-rows: repeat(3, 46px);
+    }
+    .arrowRow .padBtn { height: auto; font-size: 22px; }
     .panel {
       flex: 0 0 186px; max-width: 186px;
       max-height: calc(100vh - 56px); overflow-y: auto;
@@ -252,7 +236,7 @@
   }
 
   /* fullscreen: give everything to the maze */
-  body.fs .top, body.fs .foot, body.fs .touchActions-mobile-only { display: none; }
+  body.fs .top, body.fs .foot { display: none; }
   body.fs .layout { padding: 2px; gap: 6px; }
   body.fs .panel { flex: 0 0 200px; max-width: 200px; max-height: calc(100vh - 8px); }
 
@@ -289,8 +273,18 @@
   .ewR { font-size: 12px; line-height: 1.45; }
   .ewR span { opacity: .75; font-size: 10.5px; }
   #endStats { margin: 4px 0 10px; font-size: 14px; opacity: .9; }
+  .buildLine { margin: 10px 0 0; font-size: 11px; opacity: .55; }
   .scrollList { max-height: 230px; overflow-y: auto; margin: 10px 0 14px; border-radius: 12px; border: 1px solid #2b3a75; background: rgba(7,11,28,.5); }
   .foot { text-align: center; padding: 4px 12px 8px; font-size: 11px; opacity: .5; flex: 0 0 auto; }
+  .updateBar {
+    position: fixed; left: 50%; transform: translateX(-50%) translateY(120%);
+    bottom: 14px; z-index: 60; display: flex; align-items: center; gap: 10px;
+    background: #1b2552; border: 1px solid var(--info); border-radius: 999px;
+    padding: 8px 10px 8px 16px; font-size: 13px;
+    box-shadow: 0 12px 40px rgba(0,0,0,.5); transition: transform .3s ease;
+  }
+  .updateBar.show { transform: translateX(-50%); }
+  .updateBar .btn { padding: 7px 12px; font-size: 13px; }
 </style>
 </head>
 <body>
@@ -308,26 +302,27 @@
 
 <main class="layout">
   <section class="stageCol">
+    <!-- phones: slim action row above the maze (keeps the maze big) -->
+    <div class="actRow">
+      <button class="btn big js-listen">🔊 <span lang="ar" dir="rtl">استمع</span></button>
+      <button class="btn ghost js-check">🤲 <span lang="ar" dir="rtl">تحقق</span></button>
+      <button class="btn ghost js-drop">⌫</button>
+      <button class="btn ghost js-reset">↺</button>
+    </div>
+
     <div id="stageWrap">
       <canvas id="cv"></canvas>
       <div id="banner"><div id="bannerAr"></div><div id="bannerEn"></div></div>
       <div id="msgbar"><div id="msgAr"></div><div id="msgEn"></div></div>
     </div>
 
-    <!-- touch controls (phones/tablets): swipe on the maze also works -->
-    <div class="touchBar">
-      <div class="dpad">
-        <button class="padBtn padUp"   data-dir="up" aria-label="up">▲</button>
-        <button class="padBtn padLeft" data-dir="left" aria-label="left">◀</button>
-        <button class="padBtn padRight" data-dir="right" aria-label="right">▶</button>
-        <button class="padBtn padDown" data-dir="down" aria-label="down">▼</button>
-      </div>
-      <div class="touchActions">
-        <button class="btn big js-listen">🔊 <span lang="ar" dir="rtl">استمع</span> · Listen</button>
-        <button class="btn ghost js-check">🤲 <span lang="ar" dir="rtl">تحقق</span> · Check</button>
-        <button class="btn ghost js-drop touchActions-mobile-only">⌫ <span lang="ar" dir="rtl">أعد حرفًا</span></button>
-        <button class="btn ghost js-reset touchActions-mobile-only">↺ <span lang="ar" dir="rtl">البداية</span></button>
-      </div>
+    <!-- phones: arrows under the maze — or beside it in landscape.
+         Swiping on the maze works as a joystick too. -->
+    <div class="arrowRow">
+      <button class="padBtn padUp"    data-dir="up" aria-label="up">▲</button>
+      <button class="padBtn padLeft"  data-dir="left" aria-label="left">◀</button>
+      <button class="padBtn padDown"  data-dir="down" aria-label="down">▼</button>
+      <button class="padBtn padRight" data-dir="right" aria-label="right">▶</button>
     </div>
   </section>
 
@@ -365,7 +360,14 @@
   </aside>
 </main>
 
-<div class="foot">Listening &amp; spelling with Qur'anic words · recitation clips bundled in <code>audio/</code></div>
+<div class="foot">Listening &amp; spelling with Qur'anic words · recitation clips bundled in <code>audio/</code>
+  · <span id="buildStamp"></span></div>
+
+<!-- shown only when a newer build has been deployed -->
+<div class="updateBar" id="updateBar">
+  <span lang="ar" dir="rtl">🔄 يوجد إصدار أحدث — أعد التحميل</span>
+  <button class="btn" id="btnReload">Reload · تحديث</button>
+</div>
 
 <!-- START SCREEN -->
 <div class="overlay" id="menu">
@@ -390,6 +392,7 @@
         your home screen and play offline.</li>
     </ul>
     <button class="btn big" id="btnStart" style="width:100%;">▶ <span lang="ar" dir="rtl">ابدأ اللعب</span> — Start</button>
+    <p class="buildLine"><span id="buildStampMenu"></span></p>
   </div>
 </div>
 

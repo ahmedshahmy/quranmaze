@@ -9,7 +9,7 @@
    Bump CACHE when you want to force a full refresh of cached media. */
 'use strict';
 
-var CACHE = 'quran-maze-v6';
+var CACHE = 'quran-maze-v7';
 var MEDIA = [
   './audio/noor.mp3',
   './audio/qamar.mp3',
@@ -81,7 +81,9 @@ self.addEventListener('fetch', function (e) {
 
   // network first for code/HTML, offline fallback to the cache
   e.respondWith(
-    fetch(req).then(function (res) {
+    // no-store: always take the freshest code when online (a stale HTTP cache
+    // is what makes "I reloaded but it behaves the same" happen)
+    fetch(req, { cache: 'no-store' }).then(function (res) {
       if (res && res.status === 200) {
         try {
           var copy = res.clone();

@@ -36,8 +36,10 @@ async function main() {
   const check = (ok, label, detail) => { results.push({ ok, label }); console.log(`${ok ? 'PASS' : 'FAIL'}  ${label}${detail ? ' — ' + detail : ''}`); };
 
   const PHONES = [
-    { name: 'iPhone 12 portrait', w: 390, h: 844, wantMaze: 'tall' },
-    { name: 'small Android portrait', w: 360, h: 640, wantMaze: 'tall' },
+    { name: 'iPhone 12 portrait', w: 390, h: 844, wantMaze: 'phone' },
+    { name: 'small Android portrait', w: 360, h: 640, wantMaze: 'phoneS' },
+    { name: 'tall Android portrait', w: 412, h: 915, wantMaze: 'phone' },
+    { name: 'tablet portrait', w: 820, h: 1180, wantMaze: 'tall' },
     { name: 'phone landscape', w: 844, h: 390, wantMaze: 'wide' }
   ];
   const DIR_KEYS = { up: 0, right: 1, down: 2, left: 3 };
@@ -54,7 +56,8 @@ async function main() {
 
     const info = await evalJs(`(() => {
       const cv = document.getElementById('cv').getBoundingClientRect();
-      const bar = document.querySelector('.touchBar');
+      const bar = document.querySelector('.arrowRow');
+      const acts = document.querySelector('.actRow');
       const st = window.__qp.state();
       return {
         maze: st.maze, cols: st.cols, rows: st.rows, tile: st.tile,
@@ -62,14 +65,19 @@ async function main() {
         wPct: Math.round(cv.width / innerWidth * 100), hPct: Math.round(cv.height / innerHeight * 100),
         barVisible: !!(bar && bar.offsetParent !== null), barH: bar ? Math.round(bar.offsetHeight) : 0,
         barW: bar ? Math.round(bar.offsetWidth) : 0,
+        actsVisible: !!(acts && acts.offsetParent !== null),
+        letters: st.letters.filter(l => !l.taken).length,
         zones: [...new Set(st.letters.filter(l => !l.taken).map(l => l.zone))].sort().join(',')
       };
     })()`);
     console.log(`   maze=${info.maze} ${info.cols}x${info.rows} tile=${info.tile}px canvas=${info.canvas} (${info.wPct}% w, ${info.hPct}% h)`);
-    console.log(`   touchBar ${info.barVisible ? 'visible' : 'hidden'} (${info.barW}x${info.barH}), letter zones=${info.zones}`);
+    console.log(`   controls: arrows ${info.barVisible ? 'yes' : 'no'} (${info.barW}x${info.barH}), actions ${info.actsVisible ? 'yes' : 'no'} · letter zones=${info.zones}`);
     check(info.maze === phone.wantMaze, 'maze auto-selected for orientation', info.maze);
-    check(info.barVisible, 'touch controls visible');
-    check(info.zones.split(',').length === 3, 'letters spread over 3 areas', 'zones ' + info.zones);
+    check(info.barVisible && info.actsVisible, 'touch controls visible');
+    check(info.hPct >= 60, 'maze is big on the phone', info.hPct + '% of height');
+    const expectZones = Math.min(3, info.letters);
+    check(info.zones.split(',').length === expectZones,
+          `letters spread over ${expectZones} area(s)`, 'zones ' + info.zones);
     check(info.hPct >= 45, 'maze uses a good share of the phone screen', info.hPct + '% height');
 
     // ---------- swipe ----------

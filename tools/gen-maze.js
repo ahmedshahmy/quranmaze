@@ -28,8 +28,11 @@ function mulberry32(a) {
 }
 
 const CONFIGS = {
-  wide: { cols: 27, rows: 23, bands: [[7, '~'], [15, '^']], seed: 20250913, braid: 0.55 },
-  tall: { cols: 19, rows: 31, bands: [[11, '~'], [21, '^']], seed: 771117, braid: 0.55 }
+  wide:  { cols: 27, rows: 23, bands: [[7, '~'], [15, '^']],  seed: 20250913, braid: 0.55 },
+  tall:  { cols: 19, rows: 31, bands: [[11, '~'], [21, '^']], seed: 771117, braid: 0.55 },
+  /* phones: fewer columns -> bigger tiles on a narrow screen */
+  phone:  { cols: 17, rows: 29, bands: [[9, '~'], [19, '^']],  seed: 515023, braid: 0.55 },
+  phoneS: { cols: 17, rows: 23, bands: [[7, '~'], [15, '^']],  seed: 880417, braid: 0.55 }
 };
 
 function makeGrid(R, C, ch) {
@@ -231,6 +234,8 @@ function jsRows(rows) {
   return rows.map((r) => "        '" + r + "'").join(',\n');
 }
 
+module.exports = { CONFIGS: CONFIGS, generate: generate };
+
 function main() {
   const checkOnly = process.argv.includes('--check');
   const D = require('../js/maze-data.js');
@@ -264,4 +269,4 @@ function main() {
     }
   }
 }
-main();
+if (require.main === module) main();

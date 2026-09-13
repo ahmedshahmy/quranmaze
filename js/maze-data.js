@@ -16,10 +16,45 @@
      into a top area, the middle home area (player + sheikh) and a bottom area:
        wide : 27 x 23  — desktop / landscape
        tall : 19 x 31  — portrait phones (fewer columns => bigger tiles)  */
+  /* Three generated mazes (see tools/gen-maze.js) — dense 1-tile corridors,
+     a full-width WATER band and a full-width FIRE band that split each maze
+     into a top area, the middle home area (player + sheikh) and a bottom area:
+       wide  : 27 x 23  — desktop / landscape
+       tall  : 19 x 31  — tablets and larger phones in portrait
+       phone : 17 x 29  — phones in portrait (fewest columns => biggest tiles)  */
+  /* Three generated mazes (see tools/gen-maze.js, rebuild with
+     tools/build-mazes.js) — dense 1-tile corridors, a full-width WATER band and
+     a full-width FIRE band that split each maze into a top area, the middle home
+     area (player + sheikh) and a bottom area:
+       wide  : 27 x 23  — desktop / landscape
+       tall  : 19 x 31  — tablets and larger phones in portrait
+       phone : 17 x 25  — phones in portrait (fewest columns => biggest tiles)  */
+  /* Three generated mazes (see tools/gen-maze.js, rebuild with
+     tools/build-mazes.js) — dense 1-tile corridors, a full-width WATER band and
+     a full-width FIRE band that split each maze into a top area, the middle home
+     area (player + sheikh) and a bottom area:
+       wide  : 27 x 23  — desktop / landscape
+       tall  : 19 x 31  — tablets and larger phones in portrait
+       phone : 17 x 25  — phones in portrait (fewest columns => biggest tiles)  */
+  /* Four generated mazes (see tools/gen-maze.js; rebuild with
+     tools/build-mazes.js) — dense 1-tile corridors, a full-width WATER band and
+     a full-width FIRE band that split each maze into a top area, the middle home
+     area (player + sheikh) and a bottom area:
+       wide   : 27 x 23  — desktop / landscape
+       tall   : 19 x 31  — tablets in portrait
+       phone  : 17 x 29  — phones in portrait
+       phoneS : 17 x 23  — short phones in portrait (biggest tiles)  */
+  /* Three generated mazes (see tools/gen-maze.js, rebuild with
+     tools/build-mazes.js) — dense 1-tile corridors, a full-width WATER band and
+     a full-width FIRE band that split each maze into a top area, the middle home
+     area (player + sheikh) and a bottom area:
+       wide  : 27 x 23  — desktop / landscape
+       tall  : 19 x 31  — tablets and larger phones in portrait
+       phone : 17 x 25  — phones in portrait (fewest columns => biggest tiles)  */
   var MAZES = {
     wide: {
-    id: 'wide',
-    rows: [
+      id: 'wide',
+      rows: [
         '###########################',
         '#.............#...........#',
         '#.#.###.#.#####.#.###.#####',
@@ -43,11 +78,11 @@
         '#.#.#####.#.###.#.#.#.#.#.#',
         '#...............#...#.....#',
         '###########################'
-    ]
+      ]
     },
     tall: {
-    id: 'tall',
-    rows: [
+      id: 'tall',
+      rows: [
         '###################',
         '#.#.....#.....#...#',
         '#.#.#.#.#.###.#.#.#',
@@ -79,15 +114,82 @@
         '#.###.#.#.#.#.###.#',
         '#.....#...#.......#',
         '###################'
-    ]
+      ]
     },
+    phone: {
+      id: 'phone',
+      rows: [
+        '#################',
+        '#.#.......#.....#',
+        '#.#.#.#.###.#.#.#',
+        '#...#.#.....#...#',
+        '#####.#.###.###.#',
+        '#.....#...#.#...#',
+        '#.#######.#.#.#.#',
+        '#.....#...#.#.#.#',
+        '#####.#.#.#.#.#.#',
+        '#~~~~~~~~~~~~~~~#',
+        '#...###...#.#.###',
+        '#.#.....#...#...#',
+        '#.#############.#',
+        '#.#.............#',
+        '#.#.###########.#',
+        '#...#...........#',
+        '#.###.###.#####.#',
+        '#..S#..P#.#.....#',
+        '#.#.#.#.#.#.#####',
+        '#^^^^^^^^^^^^^^^#',
+        '#...#.#.#####...#',
+        '#.#.#.....#...#.#',
+        '#.#.###.#.#.#.###',
+        '#.#.....#...#...#',
+        '#.###.#####.###.#',
+        '#...#.#.....#...#',
+        '###.#.#.#####.#.#',
+        '#...#...........#',
+        '#################'
+      ]
+    },
+    phoneS: {
+      id: 'phoneS',
+      rows: [
+        '#################',
+        '#.........#.....#',
+        '#.#####.###.#.#.#',
+        '#.....#...#.#...#',
+        '#.###.#.#.#.#.#.#',
+        '#.#...#.#...#.#.#',
+        '#.#.###.###.#.#.#',
+        '#~~~~~~~~~~~~~~~#',
+        '#.#######.#####.#',
+        '#.....#.........#',
+        '#.###.#.#.#####.#',
+        '#.#.....#.....#.#',
+        '#.#.#.###.#.#.#.#',
+        '#S#.#...#.#.#.#P#',
+        '#.###.#.#.#.#.#.#',
+        '#^^^^^^^^^^^^^^^#',
+        '#.#######.#.#####',
+        '#.........#...#.#',
+        '#.#.###.#.#.#.#.#',
+        '#.#...#.#.#.#...#',
+        '#.###.#.#.#.###.#',
+        '#.......#...#...#',
+        '#################'
+      ]
+    }
   };
 
-  /* Pick a maze for the current viewport (portrait -> the tall maze).
-     An explicit ?maze=wide|tall always wins. */
+  /* Pick a maze for the current viewport (portrait -> a tall maze; narrow
+     phones get the 17-column one so the tiles stay big). An explicit
+     ?maze=wide|tall|phone always wins. */
   function pickMaze(vw, vh, prefer) {
     if (prefer && MAZES[prefer]) return MAZES[prefer];
-    return (vh > vw * 1.02) ? MAZES.tall : MAZES.wide;
+    if (vh > vw * 1.02) {                                 // portrait
+      if (vw >= 520) return MAZES.tall;                   // tablet
+      return (vh >= 720) ? MAZES.phone : MAZES.phoneS;    // phone (short ones need fewer rows)
+    }
+    return MAZES.wide;                                    // desktop / landscape
   }
 
   /* ------------------------------------------------------------

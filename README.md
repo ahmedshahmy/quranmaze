@@ -151,6 +151,15 @@ options:
 * **Other free static hosts** (Netlify Drop, Cloudflare Pages, Vercel) also work:
   just upload the folder — it is plain static files, no build step.
 
+### Keeping an up-to-date build
+
+The footer and the start screen show a **build stamp** (e.g.
+`build 2026-09-13.5 · 73 words · 4 mazes`). The page also fetches
+`version.json` (no-store); if a newer build has been deployed you get a
+**"reload"** prompt, so a stale cached copy is easy to spot. The service worker
+fetches HTML/JS with `cache: 'no-store'` when online, so a plain reload always
+picks up the newest version.
+
 ### Screen & controls
 
 The game ships **two dense mazes** (1-tile corridors, no empty halls) and picks
@@ -159,7 +168,13 @@ one automatically for the screen:
 | Maze | Size | Used when |
 |------|------|-----------|
 | `wide` | 27 × 23 | desktop, tablet, phone in landscape |
-| `tall` | 19 × 31 | phone/tablet in portrait (fewer columns → bigger tiles) |
+| `tall` | 19 × 31 | tablet in portrait (≥ 520 px wide) |
+| `phone` | 17 × 29 | phone in portrait (≥ 720 px tall) |
+| `phoneS` | 17 × 23 | short phone in portrait (< 720 px tall) |
+
+Fewer columns means bigger tiles, so phones get their own narrow mazes. Rebuild
+them with `node tools/build-mazes.js` (it regenerates from `tools/gen-maze.js`,
+validates every maze and only then writes `js/maze-data.js`).
 
 `?maze=wide` or `?maze=tall` forces one. Each maze is regenerated/tuned with
 `node tools/gen-maze.js` (seeded, so it is reproducible) and must pass
@@ -178,10 +193,11 @@ fills ~87% of the screen height on a desktop and ~98% in fullscreen. Use
 
 ### On a phone
 
-* The page is responsive: on touch devices a **D-pad sits directly under the
-  maze** (58 px buttons, 46 px in phone landscape) with big **Listen / Check**
-  buttons, and in landscape the pad and panel move beside the maze so it stays
-  tall (77% of the screen height).
+* The page is responsive: on a phone the **action row (Listen / Check / ⌫ / ↺)
+  sits above the maze** and the **arrow row below it**, so almost no height is
+  wasted — the maze fills **~76% of the screen height** on an iPhone 12 and
+  ~68% on a small 360×640 phone, at 19–23 px tiles. In landscape both rows move
+  beside the maze instead (77% of the height).
 * The maze also steers like a **joystick**: drag on it and the pac-man follows
   your finger; **lift your finger and it stops** (it no longer stays locked in
   one direction).
@@ -207,6 +223,7 @@ fills ~87% of the screen height on a desktop and ~98% in fullscreen. Use
 | `tools/verify-touch.js` | phone/touch verification (d-pad, swipe, layout) |
 | `tools/resolve-audio.js` | resolves + verifies each word's Qur'an recitation (api/audio.quran.com) |
 | `tools/build-words.js` | builds new words from `tools/words-source.js`: finds the Qur'anic occurrence, verifies it, downloads the clip, emits WORDS entries |
+| `tools/build-mazes.js` | regenerates + validates all four mazes into `js/maze-data.js` |
 | `tools/verify-audio.js` | drives a real browser over CDP to prove audio plays |
 | `tools/shot-canvas.js` | screenshots just the maze canvas via CDP |
 

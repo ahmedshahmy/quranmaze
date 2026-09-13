@@ -40,6 +40,10 @@
     }
     return arr;
   }
+  /* bump on every release — shown in the UI and compared with version.json so
+     a stale cached build can be spotted (and reloaded) at a glance */
+  var BUILD = '2026-09-13.5';
+
   var AR_FONT = '"Amiri","Geeza Pro","Noto Naskh Arabic","Traditional Arabic","Scheherazade New","Segoe UI",Tahoma,sans-serif';
   var EN_FONT = '"Segoe UI",Tahoma,Arial,sans-serif';
 
@@ -1202,18 +1206,27 @@
     var topEl = document.querySelector('.top');
     var footEl = document.querySelector('.foot');
     var panelEl = document.querySelector('.panel');
-    var barEl = document.querySelector('.touchBar');
+    var actEl = document.querySelector('.actRow');
+    var arrowEl = document.querySelector('.arrowRow');
     var coarse = window.matchMedia('(pointer: coarse)').matches;
     var vv = window.visualViewport;
     var vw = (vv && vv.width) ? vv.width : window.innerWidth;
     var vh = (vv && vv.height) ? vv.height : window.innerHeight;
     var headerH = (fs || !topEl) ? 0 : topEl.offsetHeight;
     var footH = (fs || !footEl) ? 0 : footEl.offsetHeight;
-    // the touch controls sit under the maze in portrait, beside it in landscape
-    var barVisible = !!(barEl && barEl.offsetParent !== null);
+    // phone controls: a slim action row above the maze and an arrow row below it;
+    // on a sideways phone both sit beside the maze (they cost width, not height)
+    var actVisible = !!(actEl && actEl.offsetParent !== null);
+    var arrowVisible = !!(arrowEl && arrowEl.offsetParent !== null);
     var phoneLandscape = coarse && !fs && vh < vw && vh <= 560;
-    var barH = (barVisible && !phoneLandscape) ? barEl.offsetHeight + 8 : 0;
-    var barW = (barVisible && phoneLandscape) ? barEl.offsetWidth + 10 : 0;
+    var barH = 0, barW = 0;
+    if (phoneLandscape) {
+      if (actVisible) barW += actEl.offsetWidth + 10;
+      if (arrowVisible) barW += arrowEl.offsetWidth + 10;
+    } else {
+      if (actVisible) barH += actEl.offsetHeight + 6;
+      if (arrowVisible) barH += arrowEl.offsetHeight + 6;
+    }
     var panelBeside = fs ? true : (vw > 900 || phoneLandscape);
     var panelW = (panelBeside && panelEl) ? Math.max(panelEl.offsetWidth, 180) + 14 : 0;
     var availH = Math.max(140, vh - headerH - footH - barH - (fs ? 14 : 26));
@@ -1398,7 +1411,7 @@
         else if (tileKinds[r][c] === 'corridor') open++;
       }
       if (cw < C - 4 || cf < C - 4) failures.push('hazard bands missing (water=' + cw + ' fire=' + cf + ' of ' + C + ')');
-      if (open < 180) failures.push('maze too small: ' + open + ' corridors');
+      if (open < C * R * 0.25) failures.push('maze too small/sparse: ' + open + ' corridors of ' + (C * R));
     }
     function hazardLogic() {
       ['water', 'fire'].forEach(function (kind) {
@@ -1601,7 +1614,7 @@
   }
 
   /* ================= maze selection ================= */
-  var mazeOverride = null; // ?maze=wide|tall
+  var mazeOverride = null; // ?maze=wide|tall|phone|phoneS
   function pickMazeId() {
     return D.pickMaze(window.innerWidth, window.innerHeight || 9999, mazeOverride).id;
   }
@@ -1623,6 +1636,29 @@
     placeLetters(word);
     resetTokens();
     syncUI();
+  }
+
+  function buildMazeSummary() {
+    var names = [];
+    for (var id in D.MAZES) if (Object.prototype.hasOwnProperty.call(D.MAZES, id)) names.push(id);
+    return names.length + ' mazes';
+  }
+
+  /* show the build + offer a reload when a newer one is deployed */
+  function checkForUpdate() {
+    var label = 'build ' + BUILD + ' · ' + WORDS.length + ' words · ' + buildMazeSummary();
+    var stamp = document.getElementById('buildStamp');
+    if (stamp) stamp.textContent = label;
+    var stamp2 = document.getElementById('buildStampMenu');
+    if (stamp2) stamp2.textContent = label;
+    fetch('version.json', { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (v) {
+      if (!v || !v.build || v.build === BUILD) return;
+      var bar = document.getElementById('updateBar');
+      if (!bar) return;
+      bar.classList.add('show');
+      var btn = document.getElementById('btnReload');
+      if (btn) btn.addEventListener('click', function () { location.reload(); });
+    }).catch(function () { /* offline: ignore */ });
   }
 
   function init() {
@@ -1654,6 +1690,7 @@
     resetTokens();
     syncUI();
     rafId = requestAnimationFrame(frame);
+    checkForUpdate();
 
     // debug / preview helper: ?autostart starts the game immediately,
     // ?word=N jumps straight to that word index, ?autotest=ok|wrong runs
@@ -1665,7 +1702,7 @@
       var cnt = qs.get('count');
       if (cnt !== null) autoTestCount = Math.max(1, parseInt(cnt, 10) || 12);
       var mz = qs.get('maze');
-      if (mz === 'wide' || mz === 'tall') { mazeOverride = mz; loadMaze(mz); }
+      if (mz && D.MAZES[mz]) { mazeOverride = mz; loadMaze(mz); }
       var want = qs.get('word');
       if (want !== null) forcedStartIndex = clamp(parseInt(want, 10) || 0, 0, totalWords - 1);
       var at = qs.get('autotest');
