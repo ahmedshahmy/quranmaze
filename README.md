@@ -10,8 +10,10 @@ them to the sheikh for checking.
 1. The maze has a full-width **water** band and a full-width **fire** band, plus
    vertical water/fire accents in the middle hall.
 2. Cross **water** with a collected **⛵ boat**, and **fire** with a collected
-   **🧯 extinguisher**. Each crossing uses one item; new items keep appearing
-   near you a few seconds later, so you can always get back.
+   **🧯 extinguisher**. One item is used per **crossing** (entering the barrier);
+   once you are on a barrier, moving along it is free. New items keep appearing
+   near you a few seconds later, and if the player ever has none while none
+   exist anywhere, one is spawned within reach — so you can always get back.
 3. The word is **recited aloud** at the start of the round. Press
    **🔊 استمع للكلمة · Listen** (or **R**) to hear it again at any time.
 4. Letters are **scattered over the whole maze** — top area (behind the water),
@@ -188,9 +190,16 @@ fills ~87% of the screen height on a desktop and ~98% in fullscreen. Use
 
 Customising: edit `WORDS` (letters, `recite`, `audio`, `ref`) and the `MAZES`
 rows in `js/maze-data.js`; map symbols are `#` wall, `.` corridor, `~` water,
-`^` fire, `P` player start, `S` sheikh. Then run `node tools/validate.js` — it
-checks row widths, borders, reachability, that the sheikh can always be reached
-**without spending items**, and that every area has room for letters.
+`^` fire, `P` player start, `S` sheikh. Then run `node tools/validate.js`. It checks row widths, borders,
+reachability, that the sheikh can always be reached **without spending items**,
+that every area has room for letters, and two level-design guarantees that
+prevent unreachable letters:
+
+* every area (top / middle / bottom) is **one single safe region** — no pockets
+  that can only be reached by walking along a hazard band
+* every tile is reachable within **one barrier entry** (0-1 BFS using the real
+  item-cost rule), and each band has at least two **aligned openings** for a
+  straight one-item crossing
 
 ## Developer checks
 
