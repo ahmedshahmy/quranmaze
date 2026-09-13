@@ -1,0 +1,8 @@
+# local debug artifacts (headless chrome profiles, screenshots, logs)
+.debug/
+# python
+__pycache__/
+*.pyc
+# OS junk
+.DS_Store
+Thumbs.db

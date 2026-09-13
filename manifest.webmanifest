@@ -1,0 +1,19 @@
+{
+  "name": "Quran Letter Maze — متاهة حروف القرآن",
+  "short_name": "Quran Maze",
+  "description": "Pac-Man style maze: listen to a hidden Qur'an word and collect its Arabic letters in the right order for the sheikh.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0b1026",
+  "theme_color": "#0b1026",
+  "lang": "en",
+  "dir": "ltr",
+  "categories": ["education", "games", "kids"],
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
